@@ -33,12 +33,6 @@ return function(env)
         end,
     })
 
-local function isLockedDirt(d)
-    if d.Name ~= 'Dirt' then return false end
-    if not d:IsA('BasePart') then return false end
-    return d.Parent:FindFirstChild('Grass') ~= nil
-end
-    
     AutoBox:AddToggle('AutoUnlockPlots', {
         Text = 'Auto Unlock Farm Plots', Default = false,
         Callback = function(val)
@@ -46,27 +40,17 @@ end
             if not val then return end
             task.spawn(function()
                 while _G.AutoUnlockFarmPlots do
-                    pcall(function()
-                        local plot = findPlot()
-                        if not plot then return end
-                        local unlockRemote = Remotes:FindFirstChild('UnlockPlot')
-                        if not unlockRemote then return end
-                        local char = LP.Character
-                        local hrp  = char and char:FindFirstChild('HumanoidRootPart')
-                        if not hrp then return end
+                    local plot = findPlot()
+                    if plot then
                         for _, d in ipairs(plot:GetDescendants()) do
                             if not _G.AutoUnlockFarmPlots then break end
-                            if d.Name == 'Dirt' and d:IsA('BasePart')
-                                and (d.Parent == plot or d.Parent.Parent == plot)
-                                and isLockedDirt(d) then
-                                hrp.CFrame = CFrame.new(d.Position + Vector3.new(0, 4, 0))
-                                task.wait(0.5)
-                                unlockRemote:FireServer(d)
-                                task.wait(1.5)
+                            if d.Name == 'Dirt' then
+                                pcall(function() Remotes.UnlockPlot:FireServer(d) end)
+                                task.wait(2); break
                             end
                         end
-                    end)
-                    task.wait(5)
+                    end
+                    task.wait(2)
                 end
             end)
         end,

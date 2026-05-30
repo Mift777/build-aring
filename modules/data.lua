@@ -176,53 +176,6 @@ return function(env)
         return slots
     end
 
-    local function getEggShopInfo()
-        local pm = workspace:FindFirstChild("PetMerchant")
-        if not pm then return "--- EGG SHOP ---\nPet Merchant not found" end
-        local lines = {}
-        local restockText = "Restocks In: Unknown"
-        local sign = pm:FindFirstChild("MerchantSign")
-        if sign then
-            local sg = sign:FindFirstChildWhichIsA("SurfaceGui")
-            if sg then
-                local tl = sg:FindFirstChild("TimeLabel")
-                if tl then restockText = tl.Text end
-            end
-        end
-        table.insert(lines, "--- EGG SHOP (" .. restockText .. ") ---")
-        local hasEggs = false
-        for i = 1, 5 do
-            local pod = pm:FindFirstChild("Podium" .. i .. "Stock") or pm:FindFirstChild("Podium" .. i)
-            if pod then
-                local el = pod:FindFirstChild("EggLabel", true)
-                local pl = pod:FindFirstChild("PriceLabel", true)
-                if el and pl and el.Text ~= "" then
-                    table.insert(lines, string.format("[Slot %d] %s | %s", i, el.Text, pl.Text))
-                    hasEggs = true
-                end
-            end
-        end
-        if not hasEggs then table.insert(lines, "No eggs listed (loading or empty)") end
-        return table.concat(lines, "\n")
-    end
-
-    local function getGearShopInfo()
-        local lines = {"--- GEAR SHOP ---"}
-        local hasStock = false
-        for _, gearName in ipairs(getAvailableGears()) do
-            local stock = getGearStock(gearName)
-            local price = getGearPriceFromGui(gearName)
-            local color = stock == 0 and "#FF5050" or "#00FF7F"
-            table.insert(lines, string.format(
-                "- <font color='%s'>[%d x]</font> <font color='#FFD250'>[%s]</font> %s",
-                color, stock, price, gearName
-            ))
-            if stock > 0 then hasStock = true end
-        end
-        if not hasStock then table.insert(lines, "- All gears out of stock!") end
-        return table.concat(lines, "\n")
-    end
-
     env.getMutationList       = getMutationList
     env.getIndexSeeds         = getIndexSeeds
     env.scanInventoryForSeeds = scanInventoryForSeeds
@@ -232,7 +185,4 @@ return function(env)
     env.getEggSlotsInfo       = getEggSlotsInfo
     env.getAvailableEggTypes  = getAvailableEggTypes
     env.getCurrentEggSlots    = getCurrentEggSlots
-    env.getEggShopInfo        = getEggShopInfo
-    env.getGearShopInfo       = getGearShopInfo
-    env.getFullShopInfo       = function() return getEggShopInfo() .. "\n\n" .. getGearShopInfo() end
 end

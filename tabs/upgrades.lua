@@ -13,9 +13,6 @@ return function(env)
     local haveMoney = env.haveEnoughMoney
     local findFert  = env.findFertilizer
 
-    local seedList = {"None"}; pcall(function() local v = allSeeds(); if v and #v > 0 then seedList = v end end)
-local mutList  = {"None"}; pcall(function() local v = getMuts();  if v and #v > 0 then mutList  = v end end)
-local fertList = (env.FertilizerTypes and #env.FertilizerTypes > 0) and env.FertilizerTypes or {"None"}
     -- LEFT: Plot Powerups
     local PowBox = T:AddLeftGroupbox('Plot Powerups')
 
@@ -62,13 +59,13 @@ local fertList = (env.FertilizerTypes and #env.FertilizerTypes > 0) and env.Fert
     local UpgBox = T:AddRightGroupbox('Flora Upgrade')
 
     UpgBox:AddDropdown('UpgPlants', {
-        Values = seedList, Default = {}, Multi = true,
+        Values = allSeeds(), Default = {}, Multi = true,
         Text = 'Target Plants (Empty = All)',
         Callback = function(val) _G.TargetUpgradePlantNames = val end,
     })
 
     UpgBox:AddDropdown('UpgMuts', {
-        Values = mutList, Default = {}, Multi = true,
+        Values = getMuts(), Default = {}, Multi = true,
         Text = 'Target Mutations (Empty = All)',
         Callback = function(val) _G.TargetUpgradeMutations = val end,
     })
@@ -87,9 +84,7 @@ local fertList = (env.FertilizerTypes and #env.FertilizerTypes > 0) and env.Fert
             task.spawn(function()
                 while _G.AutoUpgradePlants do
                     pcall(function()
-                        if Remotes:FindFirstChild('UpgradePlant') then
-                            Remotes.UpgradePlant:FireServer()
-                        end
+                        if Remotes:FindFirstChild('UpgradePlant') then Remotes.UpgradePlant:FireServer() end
                     end)
                     task.wait(2)
                 end
@@ -99,26 +94,26 @@ local fertList = (env.FertilizerTypes and #env.FertilizerTypes > 0) and env.Fert
 
     UpgBox:AddButton({Text='Clear Upgrade Targets', Func=function()
         _G.TargetUpgradePlantNames = {}; _G.TargetUpgradeMutations = {}
-        if Lib then Lib:Notify('Upgrade targets cleared.', 2) end
+        Lib:Notify('Upgrade targets cleared.', 2)
     end})
 
     -- LEFT: Flora Fertilization
     local FertBox = T:AddLeftGroupbox('Flora Fertilization')
 
     FertBox:AddDropdown('FertPlants', {
-        Values = seedList, Default = {}, Multi = true,
+        Values = allSeeds(), Default = {}, Multi = true,
         Text = 'Target Plants (Empty = All)',
         Callback = function(val) _G.TargetFertilizePlantNames = val end,
     })
 
     FertBox:AddDropdown('FertMuts', {
-        Values = mutList, Default = {}, Multi = true,
+        Values = getMuts(), Default = {}, Multi = true,
         Text = 'Target Mutations (Empty = All)',
         Callback = function(val) _G.TargetFertilizeMutations = val end,
     })
 
     FertBox:AddDropdown('FertTypes', {
-        Values = fertList, Default = {}, Multi = true,
+        Values = env.FertilizerTypes, Default = {}, Multi = true,
         Text = 'Fertilizer Type (Empty = All)',
         Callback = function(val) _G.TargetFertilizerTypes = val end,
     })
@@ -131,9 +126,7 @@ local fertList = (env.FertilizerTypes and #env.FertilizerTypes > 0) and env.Fert
             task.spawn(function()
                 while _G.AutoFertilize do
                     local fert = findFert()
-                    if fert then
-                        pcall(function() Remotes.Fertilize:FireServer(fert) end)
-                    end
+                    if fert then pcall(function() Remotes.Fertilize:FireServer(fert) end) end
                     task.wait(2)
                 end
             end)
@@ -141,9 +134,7 @@ local fertList = (env.FertilizerTypes and #env.FertilizerTypes > 0) and env.Fert
     })
 
     FertBox:AddButton({Text='Clear Fertilize Targets', Func=function()
-        _G.TargetFertilizePlantNames = {}
-        _G.TargetFertilizeMutations  = {}
-        _G.TargetFertilizerTypes     = {}
-        if Lib then Lib:Notify('Fertilize targets cleared.', 2) end
+        _G.TargetFertilizePlantNames = {}; _G.TargetFertilizeMutations = {}; _G.TargetFertilizerTypes = {}
+        Lib:Notify('Fertilize targets cleared.', 2)
     end})
 end

@@ -66,3 +66,61 @@ return function(env)
             db.Size = UDim2.new(1,0,0,32)
             db.BackgroundColor3 = Color3.fromRGB(30,30,30)
             db.TextColor3 = Color3.fromRGB
+            db.TextColor3 = Color3.fromRGB(200,200,200)
+            db.Text = dest.Label
+            db.Font = Enum.Font.GothamSemibold
+            db.TextSize = 13
+            db.LayoutOrder = idx
+            db.Parent = frame
+            Instance.new('UICorner', db).CornerRadius = UDim.new(0,6)
+            db.MouseButton1Click:Connect(function()
+                tpDest(dest); frame.Visible = false
+            end)
+        end
+
+        local UIS = game:GetService('UserInputService')
+        local dragging, dragStart, startPos = false
+        btn.InputBegan:Connect(function(inp)
+            if inp.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging=true; dragStart=inp.Position; startPos=btn.Position
+                inp.Changed:Connect(function()
+                    if inp.UserInputState == Enum.UserInputState.End then dragging=false end
+                end)
+            end
+        end)
+        UIS.InputChanged:Connect(function(inp)
+            if dragging and inp.UserInputType == Enum.UserInputType.MouseMovement then
+                local d = inp.Position - dragStart
+                btn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset+d.X, startPos.Y.Scale, startPos.Y.Offset+d.Y)
+            end
+        end)
+        btn.MouseButton1Click:Connect(function() frame.Visible = not frame.Visible end)
+
+        return gui, btn
+    end
+
+    FloatBox:AddToggle('ShowFloatingTP', {
+        Text = 'Show Floating TP Button', Default = false,
+        Callback = function(val)
+            floatingEnabled = val
+            if val then
+                if not floatingBtn then
+                    floatingGui, floatingBtn = createFloatingTPButton()
+                    floatingGui.Enabled = true
+                else
+                    floatingBtn.Parent.Enabled = true
+                end
+            else
+                if floatingBtn then floatingBtn.Parent.Enabled = false end
+            end
+        end,
+    })
+
+    FloatBox:AddButton({Text='Reset TP Button Position', Func=function()
+        if floatingBtn then floatingBtn.Position = UDim2.new(0.8,0,0.2,0) end
+    end})
+
+    -- RIGHT: Debug
+    local DebugBox = T:AddRightGroupbox('Debug')
+    DebugBox:AddButton({Text='Rejoin Server', Func=rejoin})
+end

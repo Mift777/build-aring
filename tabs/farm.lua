@@ -33,41 +33,46 @@ return function(env)
         end,
     })
 
+        local LOCKED_COLOR = Color3.new(0.415686, 0.223529, 0.0352941)
+    local function isLockedDirt(d)
+        if d.Name ~= 'Dirt' then return false end
+        if not d:IsA('BasePart') then return false end
+        local c = d.Color
+        return math.abs(c.R - LOCKED_COLOR.R) < 0.02
+            and math.abs(c.G - LOCKED_COLOR.G) < 0.02
+            and math.abs(c.B - LOCKED_COLOR.B) < 0.02
+    end
+
     AutoBox:AddToggle('AutoUnlockPlots', {
-    Text = 'Auto Unlock Farm Plots', Default = false,
-    Callback = function(val)
-        _G.AutoUnlockFarmPlots = val
-        if not val then return end
-        task.spawn(function()
-            while _G.AutoUnlockFarmPlots do
-                pcall(function()
-                    local plot = findPlot()
-                    if not plot then return end
-                    local unlockRemote = Remotes:FindFirstChild('UnlockPlot')
-                    if not unlockRemote then return end
-                    local char = LP.Character
-                    local hrp  = char and char:FindFirstChild('HumanoidRootPart')
-                    for _, d in ipairs(plot:GetDescendants()) do
-                        if not _G.AutoUnlockFarmPlots then break end
-                        if d.Name == 'Dirt' and #d:GetChildren() == 0 then
-                            if hrp then
-                                local pos = d:IsA('BasePart') and d.Position
-                                    or (d:IsA('Model') and d.PrimaryPart and d.PrimaryPart.Position)
-                                if pos then
-                                    hrp.CFrame = CFrame.new(pos + Vector3.new(0, 5, 0))
-                                    task.wait(0.3)
-                                end
+        Text = 'Auto Unlock Farm Plots', Default = false,
+        Callback = function(val)
+            _G.AutoUnlockFarmPlots = val
+            if not val then return end
+            task.spawn(function()
+                while _G.AutoUnlockFarmPlots do
+                    pcall(function()
+                        local plot = findPlot()
+                        if not plot then return end
+                        local unlockRemote = Remotes:FindFirstChild('UnlockPlot')
+                        if not unlockRemote then return end
+                        local char = LP.Character
+                        local hrp  = char and char:FindFirstChild('HumanoidRootPart')
+                        if not hrp then return end
+                        for _, d in ipairs(plot:GetDescendants()) do
+                            if not _G.AutoUnlockFarmPlots then break end
+                            if isLockedDirt(d) then
+                                hrp.CFrame = CFrame.new(d.Position + Vector3.new(0, 4, 0))
+                                task.wait(0.5)
+                                unlockRemote:FireServer(d)
+                                task.wait(1.5)
                             end
-                            unlockRemote:FireServer(d)
-                            task.wait(1)
                         end
-                    end
-                end)
-                task.wait(5)
-            end
-        end)
-    end,
-})
+                    end)
+                    task.wait(5)
+                end
+            end)
+        end,
+    })
 
     AutoBox:AddToggle('AutoExpandPlot', {
         Text = 'Auto Expand Farm Plot', Default = false,

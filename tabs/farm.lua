@@ -33,9 +33,8 @@ return function(env)
         end,
     })
 
-        local LOCKED_COLOR = Color3.new(0.415686, 0.223529, 0.0352941)
+        l    local LOCKED_COLOR = Color3.new(0.415686, 0.223529, 0.0352941)
     local function isLockedDirt(d)
-        if d.Name ~= 'Dirt' then return false end
         if not d:IsA('BasePart') then return false end
         local c = d.Color
         return math.abs(c.R - LOCKED_COLOR.R) < 0.02
@@ -60,7 +59,9 @@ return function(env)
                         if not hrp then return end
                         for _, d in ipairs(plot:GetDescendants()) do
                             if not _G.AutoUnlockFarmPlots then break end
-                            if isLockedDirt(d) then
+                            if d.Name == 'Dirt' and d:IsA('BasePart')
+                                and (d.Parent == plot or d.Parent.Parent == plot)
+                                and isLockedDirt(d) then
                                 hrp.CFrame = CFrame.new(d.Position + Vector3.new(0, 4, 0))
                                 task.wait(0.5)
                                 unlockRemote:FireServer(d)

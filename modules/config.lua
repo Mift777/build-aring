@@ -65,4 +65,5 @@ return function(env)
     _G.TargetFertilizePlantNames          = {}
     _G.TargetFertilizeMutations           = {}
     _G.TargetFertilizerTypes              = {}
+    _G.SessionUnlockedEggSlots = {}
 end

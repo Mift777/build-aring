@@ -34,27 +34,33 @@ return function(env)
     })
 
     AutoBox:AddToggle('AutoUnlockPlots', {
-        Text = 'Auto Unlock Farm Plots', Default = false,
-        Callback = function(val)
-            _G.AutoUnlockFarmPlots = val
-            if not val then return end
-            task.spawn(function()
-                while _G.AutoUnlockFarmPlots do
+    Text = 'Auto Unlock Farm Plots', Default = false,
+    Callback = function(val)
+        _G.AutoUnlockFarmPlots = val
+        if not val then return end
+        task.spawn(function()
+            while _G.AutoUnlockFarmPlots do
+                pcall(function()
                     local plot = findPlot()
-                    if plot then
-                        for _, d in ipairs(plot:GetDescendants()) do
-                            if not _G.AutoUnlockFarmPlots then break end
-                            if d.Name == 'Dirt' then
-                                pcall(function() Remotes.UnlockPlot:FireServer(d) end)
-                                task.wait(2); break
-                            end
+                    if not plot then return end
+                    local unlockRemote = Remotes:FindFirstChild('UnlockPlot')
+                    if not unlockRemote then
+                        print('[LamduckHub] UnlockPlot remote not found')
+                        return
+                    end
+                    for _, d in ipairs(plot:GetDescendants()) do
+                        if not _G.AutoUnlockFarmPlots then break end
+                        if d.Name == 'Dirt' and d:GetAttribute('Locked') == true then
+                            unlockRemote:FireServer(d)
+                            task.wait(1)
                         end
                     end
-                    task.wait(2)
-                end
-            end)
-        end,
-    })
+                end)
+                task.wait(3)
+            end
+        end)
+    end,
+})
 
     AutoBox:AddToggle('AutoExpandPlot', {
         Text = 'Auto Expand Farm Plot', Default = false,

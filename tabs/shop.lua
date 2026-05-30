@@ -180,10 +180,4 @@ return function(env)
             task.wait(5)
         end
     end)
-
-    -- RIGHT: Live Stock
-    local StockBox = T:AddRightGroupbox('Live Shop Stock')
-    local stockLbl = StockBox:AddLabel('Loading shop data...')
-    StockBox:AddButton({Text='Refresh Stock', Func=function() stockLbl:SetText(getShopInfo()) end})
-    task.spawn(function() task.wait(2); stockLbl:SetText(getShopInfo()) end)
 end

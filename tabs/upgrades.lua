@@ -13,10 +13,9 @@ return function(env)
     local haveMoney = env.haveEnoughMoney
     local findFert  = env.findFertilizer
 
-    local seedList = {}; pcall(function() seedList = allSeeds() or {} end)
-    local mutList  = {}; pcall(function() mutList  = getMuts()  or {} end)
-    local fertList = env.FertilizerTypes or {}
-
+    local seedList = {"None"}; pcall(function() local v = allSeeds(); if v and #v > 0 then seedList = v end end)
+local mutList  = {"None"}; pcall(function() local v = getMuts();  if v and #v > 0 then mutList  = v end end)
+local fertList = (env.FertilizerTypes and #env.FertilizerTypes > 0) and env.FertilizerTypes or {"None"}
     -- LEFT: Plot Powerups
     local PowBox = T:AddLeftGroupbox('Plot Powerups')
 

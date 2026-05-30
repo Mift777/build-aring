@@ -1,49 +1,40 @@
-local Library      = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/addons/ThemeManager.lua"))()
-local SaveManager  = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/addons/SaveManager.lua"))()
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local BASE = "https://raw.githubusercontent.com/Mift777/build-aring/main/"
 
 local env = {}
-env.Library      = Library
-env.ThemeManager = ThemeManager
-env.SaveManager  = SaveManager
 
-env.Window = Library:CreateWindow({
-    Title        = "Build A Ring Farm",
-    Center       = true,
-    AutoShow     = true,
-    TabPadding   = 8,
-    MenuFadeTime = 0.2,
+env.Window = Rayfield:CreateWindow({
+    Name           = "Build A Ring Farm",
+    Icon           = 0,
+    LoadingTitle   = "Build A Ring",
+    LoadingSubtitle = "Carregando módulos...",
+    Theme          = "DarkBlue",
+    DisableRayfieldPrompts  = false,
+    DisableBuildWarnings    = false,
 })
 
-env.FarmTab       = env.Window:AddTab("Farming")
-env.Floor1Tab     = env.Window:AddTab("Floor 1")
-env.Floor2Tab     = env.Window:AddTab("Floor 2")
-env.Floor3Tab     = env.Window:AddTab("Floor 3")
-env.UpgradesTab   = env.Window:AddTab("Upgrades")
-env.ShopTab       = env.Window:AddTab("Shop")
-env.PetsTab       = env.Window:AddTab("Pets")
-env.EventsTab     = env.Window:AddTab("Events")
-env.RewardsTab    = env.Window:AddTab("Rewards")
-env.UtilitiesTab  = env.Window:AddTab("Utilities")
-env.UISettingsTab = env.Window:AddTab("UI Settings")
+-- Tabs
+env.FarmTab     = env.Window:CreateTab("Farming",    4483362458)
+env.Floor1Tab   = env.Window:CreateTab("Floor 1",    4483362458)
+env.Floor2Tab   = env.Window:CreateTab("Floor 2",    4483362458)
+env.Floor3Tab   = env.Window:CreateTab("Floor 3",    4483362458)
+env.UpgradesTab = env.Window:CreateTab("Upgrades",   4483362458)
+env.ShopTab     = env.Window:CreateTab("Shop",       4483362458)
+env.PetsTab     = env.Window:CreateTab("Pets",       4483362458)
+env.EventsTab   = env.Window:CreateTab("Events",     4483362458)
+env.RewardsTab  = env.Window:CreateTab("Rewards",    4483362458)
+env.UtilsTab    = env.Window:CreateTab("Utilities",  4483362458)
 
 local function loadModule(path)
     local ok, err = pcall(function()
-        local url = BASE .. path .. "?cb=" .. tostring(math.floor(tick()))
-        local moduleFunc = loadstring(game:HttpGet(url))()
-        if moduleFunc then
-            moduleFunc(env)
-        else
-            print("[LamduckHub] WARN: " .. path .. " retornou nil")
-        end
+        local url = BASE .. path .. "?cb=" .. math.floor(tick())
+        local fn = loadstring(game:HttpGet(url))()
+        if fn then fn(env)
+        else warn("[BAR] WARN: " .. path .. " retornou nil") end
     end)
-    if not ok then
-        print("[LamduckHub] FAIL: " .. path .. " | " .. tostring(err))
-    else
-        print("[LamduckHub] OK: " .. path)
-    end
+    if not ok then warn("[BAR] FAIL: " .. path .. " | " .. tostring(err))
+    else print("[BAR] OK: " .. path) end
 end
 
 loadModule("modules/services.lua")
@@ -63,16 +54,6 @@ loadModule("tabs/pets.lua")
 loadModule("tabs/events.lua")
 loadModule("tabs/rewards.lua")
 loadModule("tabs/utilities.lua")
-loadModule("tabs/configtab.lua")
-
-SaveManager:SetLibrary(Library)
-ThemeManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetFolder("LamduckHub")
-SaveManager:BuildConfigSection(env.UISettingsTab)
-ThemeManager:ApplyToTab(env.UISettingsTab)
-SaveManager:LoadAutoloadConfig()
 
 if env.teleportToMyPlot then env.teleportToMyPlot() end
-
-print("[LamduckHub] Loaded.")
+print("[BAR] Carregado!")

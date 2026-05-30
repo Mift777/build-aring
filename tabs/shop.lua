@@ -1,242 +1,272 @@
+-- tabs/shop.lua
 return function(env)
-    local T           = env.ShopTab
-    local Lib         = env.Library
-    local Remotes     = env.Remotes
-    local allSeeds    = env.getIndexSeeds
-    local getGears    = env.getAvailableGears
-    local getEggTypes = env.getAvailableEggTypes
-    local getCurrEggs = env.getCurrentEggSlots
-    local getEggSlots = env.getEggSlotsInfo
-    local getGearStk  = env.getGearStock
-    local getShopInfo = env.getFullShopInfo
-    local pMoney      = env.parseMoney
-    local haveMoney   = env.haveEnoughMoney
-    local findPlot    = env.findMyPlot
-    local buyGear     = env.buyGear
-    local buyEgg      = env.buyEgg
 
-    -- LEFT: Seed Gacha
-    local GachaBox = T:AddLeftGroupbox("Seed Gacha (Roll & Buy)")
+    -- ==================== SHOP TAB ====================
+    local GachaBox = env.ShopTab:AddLeftGroupbox("Seed Gacha")
+    local GearBox  = env.ShopTab:AddRightGroupbox("Gear Shop")
+    local EggBox   = env.ShopTab:AddLeftGroupbox("Egg Shop")
 
+    -- Seed Gacha
     GachaBox:AddToggle("AutoRollBuyAll", {
-        Text = "Auto Roll & Buy ALL Seeds", Default = false,
-        Callback = function(val) _G.AutoRollAndBuyAll = val end,
+        Text    = "Auto Roll & Buy ALL Seeds",
+        Default = false,
+        Callback = function(v) _G.AutoRollBuyAll = v end
     })
 
-    GachaBox:AddDropdown("GachaSeeds", {
-        Values = allSeeds(), Default = {}, Multi = true,
-        Text = "Seeds to Snipe",
-        Callback = function(val) _G.TargetGachaSeeds = val end,
+    local seedList = {"None"}
+    local ok, seeds = pcall(function() return env.getIndexSeeds() end)
+    if ok and seeds then for _, s in ipairs(seeds) do table.insert(seedList, s) end end
+
+    GachaBox:AddDropdown("TargetSeedDrop", {
+        Text    = "Target Seed",
+        Values  = seedList,
+        Default = 1,
+        Callback = function(v) _G.TargetSeed = (v == "None") and nil or v end
     })
 
-    GachaBox:AddToggle("AutoRollBuySelected", {
-        Text = "Auto Roll & Buy SELECTED", Default = false,
-        Callback = function(val) _G.AutoRollAndBuySelected = val end,
+    GachaBox:AddToggle("AutoRollBuyTarget", {
+        Text    = "Auto Roll & Buy Target Seed",
+        Default = false,
+        Callback = function(v) _G.AutoRollBuyTarget = v end
     })
 
-    task.spawn(function()
-        while true do
-            if _G.AutoRollAndBuyAll or _G.AutoRollAndBuySelected then
-                local stands = {}
-                local plot = findPlot()
-                if plot then
-                    local roller = plot:FindFirstChild("SeedRoller")
-                    if roller then
-                        for i = 1, 6 do
-                            local s = roller:FindFirstChild("Stand" .. i)
-                            if s then stands[i] = s:GetPivot().Position end
-                        end
-                    end
-                end
-                local avail = {}
-                for _, m in ipairs(workspace:GetChildren()) do
-                    if m:IsA("Model") and m:FindFirstChild("BuySeed", true) then
-                        local mp = m:GetPivot().Position
-                        local near, minD = nil, math.huge
-                        for idx, pos in pairs(stands) do
-                            local d = (Vector3.new(mp.X,0,mp.Z) - Vector3.new(pos.X,0,pos.Z)).Magnitude
-                            if d < minD then minD=d; near=idx end
-                        end
-                        if near and minD < 15 then
-                            local sg = m:FindFirstChild("SeedGui", true)
-                            if sg then
-                                for _, desc in ipairs(sg:GetDescendants()) do
-                                    if desc:IsA("TextLabel") and string.find(desc.Text, "$") then
-                                        avail[m.Name] = {standIdx=near, price=pMoney(desc.Text)}
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-                local function buyAvail(filter)
-                    if next(avail) then
-                        for name, info in pairs(avail) do
-                            if (not filter or filter[name]) and haveMoney(info.price, "Seed", name) then
-                                pcall(function() Remotes.BuySeed:FireServer(info.standIdx) end)
-                                task.wait(0.5)
-                            end
-                        end
-                    else
-                        pcall(function() Remotes.RollSeeds:FireServer() end)
-                        task.wait(3.5)
-                    end
-                end
-                if _G.AutoRollAndBuyAll then buyAvail(nil)
-                elseif _G.AutoRollAndBuySelected then buyAvail(_G.TargetGachaSeeds) end
-            end
-            task.wait(1)
+    GachaBox:AddButton({
+        Text = "Roll Once",
+        Func = function()
+            local stand = env.findNearestSeedStand and env.findNearestSeedStand()
+            if not stand then print("[Shop] No seed stand found") return end
+            local remote = env.Remotes and env.Remotes:FindFirstChild("RollSeed")
+            if remote then remote:FireServer(stand) end
         end
-    end)
-
-    -- RIGHT: Gear Shop
-    local GearBox = T:AddRightGroupbox("Gear Shop")
-
-    GearBox:AddToggle("AutoBuyAllGears", {
-        Text = "Auto Buy All Available Gears", Default = false,
-        Callback = function(val) _G.AutoBuyAllGears = val end,
     })
 
-    GearBox:AddDropdown("TargetGears", {
-        Values = getGears(), Default = {}, Multi = true,
-        Text = "Select Gears to Buy",
-        Callback = function(val) _G.TargetBuyGears = val end,
+    -- Gear Shop
+    GearBox:AddToggle("AutoBuyAllGear", {
+        Text    = "Auto Buy All Available Gears",
+        Default = false,
+        Callback = function(v) _G.AutoBuyAllGear = v end
     })
 
-    GearBox:AddToggle("AutoBuySelGears", {
-        Text = "Auto Buy Selected Gears", Default = false,
-        Callback = function(val) _G.AutoBuySelectedGears = val end,
+    local gearList = {"None"}
+    local ok2, gears = pcall(function() return env.getAvailableGears() end)
+    if ok2 and gears then for _, g in ipairs(gears) do table.insert(gearList, g) end end
+
+    GearBox:AddDropdown("TargetGearDrop", {
+        Text    = "Target Gear",
+        Values  = gearList,
+        Default = 1,
+        Callback = function(v) _G.TargetGear = (v == "None") and nil or v end
     })
 
-    task.spawn(function()
-        while true do
-            if _G.AutoBuyAllGears then
-                for _, g in ipairs(getGears()) do
-                    if getGearStk(g) > 0 then buyGear(g); task.wait(0.5) end
-                end
-            elseif _G.AutoBuySelectedGears then
-                for g in pairs(_G.TargetBuyGears or {}) do
-                    if getGearStk(g) > 0 then buyGear(g); task.wait(0.5) end
+    GearBox:AddToggle("AutoBuyTargetGear", {
+        Text    = "Auto Buy Target Gear",
+        Default = false,
+        Callback = function(v) _G.AutoBuyTargetGear = v end
+    })
+
+    GearBox:AddButton({
+        Text = "Buy All Gear Now",
+        Func = function()
+            local available = env.getAvailableGears and env.getAvailableGears() or {}
+            for _, gearName in ipairs(available) do
+                local stock = env.getGearStock and env.getGearStock(gearName) or 0
+                if stock > 0 then
+                    env.buyGear and env.buyGear(gearName)
+                    task.wait(0.5)
                 end
             end
-            task.wait(5)
         end
-    end)
+    })
 
-    -- LEFT: Egg Shop
-    local EggBox = T:AddLeftGroupbox("Egg Shop")
-
+    -- Egg Shop
     EggBox:AddToggle("AutoUnlockEggSlots", {
-        Text = "Auto Unlock Egg Slots", Default = false,
-        Callback = function(val) _G.AutoUnlockEggSlots = val end,
+        Text    = "Auto Unlock Egg Slots",
+        Default = false,
+        Callback = function(v) _G.AutoUnlockEggSlots = v end
     })
 
-    local eggSlots = getEggSlots()
+    EggBox:AddToggle("AutoBuyAllEggs", {
+        Text    = "Auto Buy All Eggs",
+        Default = false,
+        Callback = function(v) _G.AutoBuyAllEggs = v end
+    })
+
+    local eggTypeList = {"None"}
+    local ok3, eggTypes = pcall(function() return env.getAvailableEggTypes() end)
+    if ok3 and eggTypes then for _, e in ipairs(eggTypes) do table.insert(eggTypeList, e) end end
+
+    EggBox:AddDropdown("TargetEggDrop", {
+        Text    = "Target Egg Type",
+        Values  = eggTypeList,
+        Default = 1,
+        Callback = function(v) _G.TargetEggType = (v == "None") and nil or v end
+    })
+
+    EggBox:AddToggle("AutoBuyTargetEgg", {
+        Text    = "Auto Buy Target Egg",
+        Default = false,
+        Callback = function(v) _G.AutoBuyTargetEgg = v end
+    })
+
+    EggBox:AddButton({
+        Text = "Buy All Eggs Now",
+        Func = function()
+            local available = env.getAvailableEggTypes and env.getAvailableEggTypes() or {}
+            for _, eggType in ipairs(available) do
+                env.buyEgg and env.buyEgg(eggType)
+                task.wait(0.5)
+            end
+        end
+    })
+
+    -- ==================== STOCK TAB ====================
+    if env.StockTab then
+        local StockEggBox  = env.StockTab:AddLeftGroupbox("Egg Shop")
+        local StockGearBox = env.StockTab:AddRightGroupbox("Gear Shop")
+
+        local eggRestockLabel = StockEggBox:AddLabel("Restocks: ?")
+
+        local eggLines = {}
+        for i = 1, 6 do
+            eggLines[i] = StockEggBox:AddLabel("")
+        end
+
+        local gearCountLabel = StockGearBox:AddLabel("In Stock: ?")
+
+        local gearLines = {}
+        for i = 1, 10 do
+            gearLines[i] = StockGearBox:AddLabel("")
+        end
+
+        local function refreshStock()
+            -- Egg restock timer
+            local pm = workspace:FindFirstChild("PetMerchant")
+            if pm then
+                local sign = pm:FindFirstChild("MerchantSign")
+                local sg   = sign and sign:FindFirstChildWhichIsA("SurfaceGui")
+                local tl   = sg and sg:FindFirstChild("TimeLabel")
+                eggRestockLabel:SetText("Restocks: " .. (tl and tl.Text or "?"))
+            else
+                eggRestockLabel:SetText("Restocks: (no merchant)")
+            end
+
+            -- Egg podiums
+            local eggCount = 0
+            for i = 1, 6 do
+                local pod = pm and (
+                    pm:FindFirstChild("Podium" .. i .. "Stock") or
+                    pm:FindFirstChild("Podium" .. i)
+                )
+                local el = pod and pod:FindFirstChild("EggLabel",   true)
+                local pl = pod and pod:FindFirstChild("PriceLabel", true)
+                if el and el.Text ~= "" then
+                    eggCount = eggCount + 1
+                    if eggLines[eggCount] then
+                        eggLines[eggCount]:SetText(
+                            string.format("[%d] %s | %s", i, el.Text, pl and pl.Text or "?")
+                        )
+                    end
+                end
+            end
+            for i = eggCount + 1, 6 do
+                if eggLines[i] then eggLines[i]:SetText("") end
+            end
+
+            -- Gear stock
+            local gearCount = 0
+            if env.getAvailableGears and env.getGearStock and env.getGearPriceFromGui then
+                for _, gearName in ipairs(env.getAvailableGears()) do
+                    local stock = env.getGearStock(gearName)
+                    if stock > 0 then
+                        gearCount = gearCount + 1
+                        if gearLines[gearCount] then
+                            local price = env.getGearPriceFromGui(gearName)
+                            gearLines[gearCount]:SetText(
+                                string.format("[%dx] [%s] %s", stock, price, gearName)
+                            )
+                        end
+                    end
+                end
+            end
+            for i = gearCount + 1, 10 do
+                if gearLines[i] then gearLines[i]:SetText("") end
+            end
+            gearCountLabel:SetText(
+                gearCount == 0 and "No gear in stock" or ("In Stock (" .. gearCount .. "):")
+            )
+        end
+
+        StockEggBox:AddButton({ Text = "Refresh", Func = refreshStock })
+
+        task.spawn(function()
+            task.wait(3)
+            refreshStock()
+        end)
+    end
+
+    -- ==================== AUTOMATION LOOPS ====================
     task.spawn(function()
-        while true do
-            if _G.AutoUnlockEggSlots then
-                for _, si in ipairs(eggSlots) do
-                    if not _G.SessionUnlockedEggSlots[si.EggSlotNumber]
-                        and haveMoney(si.UnlockPrice, "Unlock Egg Slot " .. si.EggSlotNumber) then
-                        pcall(function()
-                            if Remotes:FindFirstChild("EggShop") and Remotes.EggShop:FindFirstChild("Transaction") then
-                                Remotes.EggShop.Transaction:InvokeServer("UnlockSlot", si.EggSlotNumber)
-                                _G.SessionUnlockedEggSlots[si.EggSlotNumber] = true
-                            end
-                        end)
+        while task.wait(1) do
+            -- Auto Roll & Buy All Seeds
+            if _G.AutoRollBuyAll then
+                local seeds2 = env.getIndexSeeds and env.getIndexSeeds() or {}
+                for _, seedName in ipairs(seeds2) do
+                    if not _G.AutoRollBuyAll then break end
+                    env.buySeed and env.buySeed(seedName)
+                    task.wait(0.5)
+                end
+            end
+
+            -- Auto Roll & Buy Target Seed
+            if _G.AutoRollBuyTarget and _G.TargetSeed then
+                env.buySeed and env.buySeed(_G.TargetSeed)
+                task.wait(0.5)
+            end
+
+            -- Auto Buy All Gear
+            if _G.AutoBuyAllGear then
+                local available = env.getAvailableGears and env.getAvailableGears() or {}
+                for _, gearName in ipairs(available) do
+                    if not _G.AutoBuyAllGear then break end
+                    local stock = env.getGearStock and env.getGearStock(gearName) or 0
+                    if stock > 0 then
+                        env.buyGear and env.buyGear(gearName)
                         task.wait(0.5)
                     end
                 end
             end
-            task.wait(3)
-        end
-    end)
 
-    EggBox:AddToggle("AutoBuyAllEggs", {
-        Text = "Auto Buy All Available Eggs", Default = false,
-        Callback = function(val) _G.AutoBuyAllEggs = val end,
-    })
-
-    EggBox:AddDropdown("TargetEggs", {
-        Values = getEggTypes(), Default = {}, Multi = true,
-        Text = "Select Eggs to Buy",
-        Callback = function(val) _G.TargetEggShopEggs = val end,
-    })
-
-    EggBox:AddToggle("AutoBuySelEggs", {
-        Text = "Auto Buy Selected Eggs", Default = false,
-        Callback = function(val) _G.AutoBuySelectedEggs = val end,
-    })
-
-    task.spawn(function()
-        while true do
-            local slots = getCurrEggs()
-            if _G.AutoBuyAllEggs then
-                for _, s in ipairs(slots) do buyEgg(s); task.wait(0.5) end
-            elseif _G.AutoBuySelectedEggs then
-                for _, s in ipairs(slots) do
-                    if _G.TargetEggShopEggs[s.Name] then buyEgg(s); task.wait(0.5) end
-                end
-            end
-            task.wait(5)
-        end
-    end)
-
-    -- Stock Info na tab separada (env.StockTab criada no main.lua)
-          if env.StockTab then
-        local EggBox  = env.StockTab:AddLeftGroupbox("Egg Shop")
-        local GearBox = env.StockTab:AddRightGroupbox("Gear Shop")
-
-        local eggHeader = EggBox:AddLabel("Restocks: ?")
-        local eggLines  = {}
-        for i = 1, 5 do eggLines[i] = EggBox:AddLabel("") end
-
-        local gearHeader = GearBox:AddLabel("In Stock:")
-        local gearLines  = {}
-        for i = 1, 8 do gearLines[i] = GearBox:AddLabel("") end
-
-        local function refreshStock()
-            local pm = workspace:FindFirstChild("PetMerchant")
-
-            -- Egg restock timer
-            if pm then
-                local sign = pm:FindFirstChild("MerchantSign")
-                local sg = sign and sign:FindFirstChildWhichIsA("SurfaceGui")
-                local tl = sg and sg:FindFirstChild("TimeLabel")
-                eggHeader:SetText("Restocks: " .. (tl and tl.Text or "?"))
-            end
-
-            -- Egg slots
-            local ei = 0
-            for i = 1, 5 do
-                local pod = pm and (pm:FindFirstChild("Podium"..i.."Stock") or pm:FindFirstChild("Podium"..i))
-                local el = pod and pod:FindFirstChild("EggLabel", true)
-                local pl = pod and pod:FindFirstChild("PriceLabel", true)
-                if el and el.Text ~= "" then
-                    ei = ei + 1
-                    if eggLines[ei] then
-                        eggLines[ei]:SetText(string.format("[%d] %s | %s", i, el.Text, pl and pl.Text or "?"))
-                    end
-                end
-            end
-            for i = ei + 1, 5 do if eggLines[i] then eggLines[i]:SetText("") end end
-
-            -- Gear in stock
-            local gi = 0
-            for _, gearName in ipairs(env.getAvailableGears()) do
-                local stock = env.getGearStock(gearName)
+            -- Auto Buy Target Gear
+            if _G.AutoBuyTargetGear and _G.TargetGear then
+                local stock = env.getGearStock and env.getGearStock(_G.TargetGear) or 0
                 if stock > 0 then
-                    gi = gi + 1
-                    if gearLines[gi] then
-                        local price = env.getGearPriceFromGui(gearName)
-                        gearLines[gi]:SetText(string.format("[%dx] [%s] %s", stock, price, gearName))
-                    end
+                    env.buyGear and env.buyGear(_G.TargetGear)
+                    task.wait(0.5)
                 end
             end
-            for i = gi + 1, 8 do if gearLines[i] then gearLines[i]:SetText("") end end
-            gearHeader:SetText(gi == 0 and "No gear in stock" or "In Stock (" .. gi .. "):")
-        end
 
-        EggBox:AddButton({Text = "Refresh", Func = refreshStock})
-        task.spawn(function() task.wait(2); refreshStock() end)
-    end
+            -- Auto Buy All Eggs
+            if _G.AutoBuyAllEggs then
+                local available = env.getAvailableEggTypes and env.getAvailableEggTypes() or {}
+                for _, eggType in ipairs(available) do
+                    if not _G.AutoBuyAllEggs then break end
+                    env.buyEgg and env.buyEgg(eggType)
+                    task.wait(0.5)
+                end
+            end
+
+            -- Auto Buy Target Egg
+            if _G.AutoBuyTargetEgg and _G.TargetEggType then
+                env.buyEgg and env.buyEgg(_G.TargetEggType)
+                task.wait(0.5)
+            end
+
+            -- Auto Unlock Egg Slots
+            if _G.AutoUnlockEggSlots then
+                env.unlockEggSlot and env.unlockEggSlot()
+                task.wait(1)
+            end
+        end
+    end)
+
+end

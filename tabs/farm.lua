@@ -44,19 +44,16 @@ return function(env)
                     local plot = findPlot()
                     if not plot then return end
                     local unlockRemote = Remotes:FindFirstChild('UnlockPlot')
-                    if not unlockRemote then
-                        print('[LamduckHub] UnlockPlot remote not found')
-                        return
-                    end
+                    if not unlockRemote then return end
                     for _, d in ipairs(plot:GetDescendants()) do
                         if not _G.AutoUnlockFarmPlots then break end
-                        if d.Name == 'Dirt' and d:GetAttribute('Locked') == true then
+                        if d.Name == 'Dirt' and #d:GetChildren() == 0 then
                             unlockRemote:FireServer(d)
                             task.wait(1)
                         end
                     end
                 end)
-                task.wait(3)
+                task.wait(5)
             end
         end)
     end,

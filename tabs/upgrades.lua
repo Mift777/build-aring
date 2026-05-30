@@ -1,140 +1,187 @@
 return function(env)
-    local T         = env.UpgradesTab
-    local Lib       = env.Library
-    local Remotes   = env.Remotes
-    local UpgTypes  = env.UpgradeTypes
-    local PlotUpgs  = env.PlotUpgrades
-    local allSeeds  = env.getIndexSeeds
-    local getMuts   = env.getMutationList
-    local getUpgCost= env.getUpgradeCost
-    local doUpgrade = env.doPlotUpgrade
-    local seedLuck  = env.upgradeSeedLuck
-    local seedRolls = env.upgradeSeedRolls
-    local haveMoney = env.haveEnoughMoney
-    local findFert  = env.findFertilizer
+    local T           = env.ShopTab
+    local Remotes     = env.Remotes
+    local allSeeds    = env.getIndexSeeds
+    local getGears    = env.getAvailableGears
+    local getEggTypes = env.getAvailableEggTypes
+    local getCurrEggs = env.getCurrentEggSlots
+    local getEggSlots = env.getEggSlotsInfo
+    local getGearStk  = env.getGearStock
+    local pMoney      = env.parseMoney
+    local haveMoney   = env.haveEnoughMoney
+    local findPlot    = env.findMyPlot
+    local buyGear     = env.buyGear
+    local buyEgg      = env.buyEgg
 
-    -- LEFT: Plot Powerups
-    local PowBox = T:AddLeftGroupbox('Plot Powerups')
+    local seedList    = {}; pcall(function() seedList    = allSeeds()    or {} end)
+    local gearList    = {}; pcall(function() gearList    = getGears()    or {} end)
+    local eggTypeList = {}; pcall(function() eggTypeList = getEggTypes() or {} end)
 
-    PowBox:AddDropdown('TargetPowerupsDd', {
-        Values = {'SawRange','SawYield','SprinklerRange','SprinklerPower','SeedLuck','SeedRolls'},
-        Default = {}, Multi = true,
-        Text = 'Select Powerups to Upgrade',
-        Callback = function(val) _G.TargetPowerups = val end,
+    -- LEFT: Seed Gacha
+    local GachaBox = T:AddLeftGroupbox("Seed Gacha (Roll & Buy)")
+
+    GachaBox:AddToggle("AutoRollBuyAll", {
+        Text = "Auto Roll & Buy ALL Seeds", Default = false,
+        Callback = function(val) _G.AutoRollAndBuyAll = val end,
     })
 
-    PowBox:AddToggle('AutoUpgradePowerups', {
-        Text = 'Auto Upgrade Selected Powerups', Default = false,
-        Callback = function(val)
-            _G.AutoUpgradePowerups = val
-            if not val then return end
-            task.spawn(function()
-                while _G.AutoUpgradePowerups do
-                    for _, upg in ipairs(UpgTypes) do
-                        if not _G.AutoUpgradePowerups then break end
-                        if _G.TargetPowerups and _G.TargetPowerups[upg] then
-                            local cfg = PlotUpgs[upg]
-                            if cfg.Type == 'plot' then
-                                for floor = 1, 3 do
-                                    local cost = getUpgCost(upg, floor)
-                                    if cost == 'MAX' then break end
-                                    if cost and haveMoney(cost, upg, tostring(cost)) then
-                                        doUpgrade(upg, floor); task.wait(1)
-                                    else break end
+    GachaBox:AddDropdown("GachaSeeds", {
+        Values = seedList, Default = {}, Multi = true,
+        Text = "Seeds to Snipe",
+        Callback = function(val) _G.TargetGachaSeeds = val end,
+    })
+
+    GachaBox:AddToggle("AutoRollBuySelected", {
+        Text = "Auto Roll & Buy SELECTED", Default = false,
+        Callback = function(val) _G.AutoRollAndBuySelected = val end,
+    })
+
+    task.spawn(function()
+        while true do
+            if _G.AutoRollAndBuyAll or _G.AutoRollAndBuySelected then
+                local stands = {}
+                local plot = findPlot()
+                if plot then
+                    local roller = plot:FindFirstChild("SeedRoller")
+                    if roller then
+                        for i = 1, 6 do
+                            local s = roller:FindFirstChild("Stand" .. i)
+                            if s then stands[i] = s:GetPivot().Position end
+                        end
+                    end
+                end
+                local avail = {}
+                for _, m in ipairs(workspace:GetChildren()) do
+                    if m:IsA("Model") and m:FindFirstChild("BuySeed", true) then
+                        local mp = m:GetPivot().Position
+                        local near, minD = nil, math.huge
+                        for idx, pos in pairs(stands) do
+                            local d = (Vector3.new(mp.X,0,mp.Z) - Vector3.new(pos.X,0,pos.Z)).Magnitude
+                            if d < minD then minD=d; near=idx end
+                        end
+                        if near and minD < 15 then
+                            local sg = m:FindFirstChild("SeedGui", true)
+                            if sg then
+                                for _, desc in ipairs(sg:GetDescendants()) do
+                                    if desc:IsA("TextLabel") and string.find(desc.Text, "$") then
+                                        avail[m.Name] = {standIdx=near, price=pMoney(desc.Text)}
+                                    end
                                 end
-                            elseif cfg.Type == 'seedluck' then
-                                seedLuck(); task.wait(1)
-                            elseif cfg.Type == 'seedrolls' then
-                                seedRolls(); task.wait(1)
                             end
                         end
                     end
-                    task.wait(3)
                 end
-            end)
-        end,
-    })
-
-    -- RIGHT: Flora Upgrade
-    local UpgBox = T:AddRightGroupbox('Flora Upgrade')
-
-    UpgBox:AddDropdown('UpgPlants', {
-        Values = allSeeds(), Default = {}, Multi = true,
-        Text = 'Target Plants (Empty = All)',
-        Callback = function(val) _G.TargetUpgradePlantNames = val end,
-    })
-
-    UpgBox:AddDropdown('UpgMuts', {
-        Values = getMuts(), Default = {}, Multi = true,
-        Text = 'Target Mutations (Empty = All)',
-        Callback = function(val) _G.TargetUpgradeMutations = val end,
-    })
-
-    UpgBox:AddSlider('UpgPlantLevel', {
-        Text = 'Target Plant Level',
-        Default = 10, Min = 1, Max = 100, Rounding = 0,
-        Callback = function(val) _G.TargetPlantUpgradeLevel = val end,
-    })
-
-    UpgBox:AddToggle('AutoUpgradePlants', {
-        Text = 'Auto Upgrade Targeted Plants', Default = false,
-        Callback = function(val)
-            _G.AutoUpgradePlants = val
-            if not val then return end
-            task.spawn(function()
-                while _G.AutoUpgradePlants do
-                    pcall(function()
-                        if Remotes:FindFirstChild('UpgradePlant') then Remotes.UpgradePlant:FireServer() end
-                    end)
-                    task.wait(2)
+                local function buyAvail(filter)
+                    if next(avail) then
+                        for name, info in pairs(avail) do
+                            if (not filter or filter[name]) and haveMoney(info.price, "Seed", name) then
+                                pcall(function() Remotes.BuySeed:FireServer(info.standIdx) end)
+                                task.wait(0.5)
+                            end
+                        end
+                    else
+                        pcall(function() Remotes.RollSeeds:FireServer() end)
+                        task.wait(3.5)
+                    end
                 end
-            end)
-        end,
+                if _G.AutoRollAndBuyAll then buyAvail(nil)
+                elseif _G.AutoRollAndBuySelected then buyAvail(_G.TargetGachaSeeds) end
+            end
+            task.wait(1)
+        end
+    end)
+
+    -- RIGHT: Gear Shop
+    local GearBox = T:AddRightGroupbox("Gear Shop")
+
+    GearBox:AddToggle("AutoBuyAllGears", {
+        Text = "Auto Buy All Available Gears", Default = false,
+        Callback = function(val) _G.AutoBuyAllGears = val end,
     })
 
-    UpgBox:AddButton({Text='Clear Upgrade Targets', Func=function()
-        _G.TargetUpgradePlantNames = {}; _G.TargetUpgradeMutations = {}
-        Lib:Notify('Upgrade targets cleared.', 2)
-    end})
-
-    -- LEFT: Flora Fertilization
-    local FertBox = T:AddLeftGroupbox('Flora Fertilization')
-
-    FertBox:AddDropdown('FertPlants', {
-        Values = allSeeds(), Default = {}, Multi = true,
-        Text = 'Target Plants (Empty = All)',
-        Callback = function(val) _G.TargetFertilizePlantNames = val end,
+    GearBox:AddDropdown("TargetGears", {
+        Values = gearList, Default = {}, Multi = true,
+        Text = "Select Gears to Buy",
+        Callback = function(val) _G.TargetBuyGears = val end,
     })
 
-    FertBox:AddDropdown('FertMuts', {
-        Values = getMuts(), Default = {}, Multi = true,
-        Text = 'Target Mutations (Empty = All)',
-        Callback = function(val) _G.TargetFertilizeMutations = val end,
+    GearBox:AddToggle("AutoBuySelGears", {
+        Text = "Auto Buy Selected Gears", Default = false,
+        Callback = function(val) _G.AutoBuySelectedGears = val end,
     })
 
-    FertBox:AddDropdown('FertTypes', {
-        Values = env.FertilizerTypes, Default = {}, Multi = true,
-        Text = 'Fertilizer Type (Empty = All)',
-        Callback = function(val) _G.TargetFertilizerTypes = val end,
-    })
-
-    FertBox:AddToggle('AutoFertilize', {
-        Text = 'Auto Fertilize Targeted Plants', Default = false,
-        Callback = function(val)
-            _G.AutoFertilize = val
-            if not val then return end
-            task.spawn(function()
-                while _G.AutoFertilize do
-                    local fert = findFert()
-                    if fert then pcall(function() Remotes.Fertilize:FireServer(fert) end) end
-                    task.wait(2)
+    task.spawn(function()
+        while true do
+            if _G.AutoBuyAllGears then
+                for _, g in ipairs(getGears()) do
+                    if getGearStk(g) > 0 then buyGear(g); task.wait(0.5) end
                 end
-            end)
-        end,
+            elseif _G.AutoBuySelectedGears then
+                for g in pairs(_G.TargetBuyGears or {}) do
+                    if getGearStk(g) > 0 then buyGear(g); task.wait(0.5) end
+                end
+            end
+            task.wait(5)
+        end
+    end)
+
+    -- LEFT: Egg Shop
+    local EggBox = T:AddLeftGroupbox("Egg Shop")
+
+    EggBox:AddToggle("AutoUnlockEggSlots", {
+        Text = "Auto Unlock Egg Slots", Default = false,
+        Callback = function(val) _G.AutoUnlockEggSlots = val end,
     })
 
-    FertBox:AddButton({Text='Clear Fertilize Targets', Func=function()
-        _G.TargetFertilizePlantNames = {}; _G.TargetFertilizeMutations = {}; _G.TargetFertilizerTypes = {}
-        Lib:Notify('Fertilize targets cleared.', 2)
-    end})
+    task.spawn(function()
+        while true do
+            if _G.AutoUnlockEggSlots then
+                local eggSlots = getEggSlots() or {}
+                for _, si in ipairs(eggSlots) do
+                    if not _G.SessionUnlockedEggSlots[si.EggSlotNumber]
+                        and haveMoney(si.UnlockPrice, "Unlock Egg Slot " .. si.EggSlotNumber) then
+                        pcall(function()
+                            if Remotes:FindFirstChild("EggShop") and Remotes.EggShop:FindFirstChild("Transaction") then
+                                Remotes.EggShop.Transaction:InvokeServer("UnlockSlot", si.EggSlotNumber)
+                                _G.SessionUnlockedEggSlots[si.EggSlotNumber] = true
+                            end
+                        end)
+                        task.wait(0.5)
+                    end
+                end
+            end
+            task.wait(3)
+        end
+    end)
+
+    EggBox:AddToggle("AutoBuyAllEggs", {
+        Text = "Auto Buy All Available Eggs", Default = false,
+        Callback = function(val) _G.AutoBuyAllEggs = val end,
+    })
+
+    EggBox:AddDropdown("TargetEggs", {
+        Values = eggTypeList, Default = {}, Multi = true,
+        Text = "Select Eggs to Buy",
+        Callback = function(val) _G.TargetEggShopEggs = val end,
+    })
+
+    EggBox:AddToggle("AutoBuySelEggs", {
+        Text = "Auto Buy Selected Eggs", Default = false,
+        Callback = function(val) _G.AutoBuySelectedEggs = val end,
+    })
+
+    task.spawn(function()
+        while true do
+            local slots = getCurrEggs() or {}
+            if _G.AutoBuyAllEggs then
+                for _, s in ipairs(slots) do buyEgg(s); task.wait(0.5) end
+            elseif _G.AutoBuySelectedEggs then
+                for _, s in ipairs(slots) do
+                    if _G.TargetEggShopEggs[s.Name] then buyEgg(s); task.wait(0.5) end
+                end
+            end
+            task.wait(5)
+        end
+    end)
+
 end

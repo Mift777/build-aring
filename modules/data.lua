@@ -206,22 +206,19 @@ return function(env)
         return table.concat(lines, "\n")
     end
 
-    local function getGearShopInfo()
-        local lines = {"--- GEAR SHOP ---"}
-        local hasStock = false
-        for _, gearName in ipairs(getAvailableGears()) do
-            local stock = getGearStock(gearName)
-            local price = getGearPriceFromGui(gearName)
-            local color = stock == 0 and "#FF5050" or "#00FF7F"
-            table.insert(lines, string.format(
-                "- <font color='%s'>[%d x]</font> <font color='#FFD250'>[%s]</font> %s",
-                color, stock, price, gearName
-            ))
-            if stock > 0 then hasStock = true end
-        end
-        if not hasStock then table.insert(lines, "- All gears out of stock!") end
-        return table.concat(lines, "\n")
+   local function getGearShopInfo()
+    local lines = {"--- GEAR SHOP ---"}
+    local hasStock = false
+    for _, gearName in ipairs(getAvailableGears()) do
+        local stock = getGearStock(gearName)
+        local price = getGearPriceFromGui(gearName)
+        local status = stock == 0 and "[OUT]" or ("[" .. stock .. "x]")
+        table.insert(lines, string.format("- %s [%s] %s", status, price, gearName))
+        if stock > 0 then hasStock = true end
     end
+    if not hasStock then table.insert(lines, "- All gears out of stock!") end
+    return table.concat(lines, "\n")
+end
 
     env.getMutationList       = getMutationList
     env.getIndexSeeds         = getIndexSeeds

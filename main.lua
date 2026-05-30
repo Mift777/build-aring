@@ -24,7 +24,6 @@ env.EventsTab     = env.Window:AddTab("Events")
 env.RewardsTab    = env.Window:AddTab("Rewards")
 env.UtilitiesTab  = env.Window:AddTab("Utilities")
 env.UISettingsTab = env.Window:AddTab("UI Settings")
-env.StockTab      = env.Window:AddTab("Stock")
 
 local function loadModule(path)
     local ok, err = pcall(function()

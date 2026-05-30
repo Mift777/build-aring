@@ -55,45 +55,25 @@ return function(env)
     end
 
     local function findMyPlot()
-    local map = workspace:FindFirstChild("Map")
-    if not map then return nil end
-    local plotsFolder = map:FindFirstChild("Plots")
-    if not plotsFolder then return nil end
-
-    -- 1: Owner child
-    for _, plot in ipairs(plotsFolder:GetChildren()) do
-        local owner = plot:FindFirstChild("Owner")
-        if owner and owner.Value == LocalPlayer then return plot end
-    end
-
-    -- 2: GetPlot direto em Remotes (nao em Remotes.Plot)
-    local ok, result = pcall(function()
-        if Remotes and Remotes:FindFirstChild("GetPlot") then
-            return Remotes.GetPlot:Invoke()
-        end
-    end)
-    if ok and result and typeof(result) == "Instance" then return result end
-    if ok and result and typeof(result) == "string" then
-        return plotsFolder:FindFirstChild(result)
-    end
-
-    -- 3: fallback por proximidade
-    local char = LocalPlayer.Character
-    local hrp  = char and char:FindFirstChild("HumanoidRootPart")
-    if hrp then
-        local closest, minDist = nil, math.huge
+        local map = workspace:FindFirstChild("Map")
+        if not map then return nil end
+        local plotsFolder = map:FindFirstChild("Plots")
+        if not plotsFolder then return nil end
         for _, plot in ipairs(plotsFolder:GetChildren()) do
-            local ok2, pivot = pcall(function() return plot:GetPivot() end)
-            if ok2 then
-                local dist = (hrp.Position - pivot.Position).Magnitude
-                if dist < minDist then minDist = dist; closest = plot end
-            end
+            local owner = plot:FindFirstChild("Owner")
+            if owner and owner.Value == LocalPlayer then return plot end
         end
-        return closest
+        local ok, result = pcall(function()
+            if Remotes and Remotes:FindFirstChild("Plot") and Remotes.Plot:FindFirstChild("GetPlot") then
+                return Remotes.Plot.GetPlot:InvokeServer()
+            end
+        end)
+        if ok then
+            if typeof(result) == "Instance" then return result end
+            if typeof(result) == "string" and plotsFolder then return plotsFolder:FindFirstChild(result) end
+        end
+        return nil
     end
-
-    return nil
-end
 
     local function getUpgradeCost(upgradeType, floorNum)
         local myPlot = findMyPlot()
@@ -144,7 +124,7 @@ end
 
     local function rejoinServer()
         if queue_on_teleport then
-            queue_on_teleport("print('[ArkhamHub] Rejoined!')")
+            queue_on_teleport("print('[LamduckHub] Rejoined!')")
         end
         env.TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
     end

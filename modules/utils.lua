@@ -46,10 +46,11 @@ return function(env)
             local o = p:FindFirstChild("Owner")
             if o and o.Value == LP then _cachedPlot=p; return p end
         end
-        -- 2: GetPlot remote
+        -- 2: Remotes.Plot.GetPlot:InvokeServer() (caminho correto do jogo)
         pcall(function()
-            if Remotes and Remotes:FindFirstChild("GetPlot") then
-                local r = Remotes.GetPlot:Invoke()
+            local pr = Remotes and Remotes:FindFirstChild("Plot")
+            if pr and pr:FindFirstChild("GetPlot") then
+                local r = pr.GetPlot:InvokeServer()
                 if typeof(r)=="Instance" then _cachedPlot=r
                 elseif typeof(r)=="string" then _cachedPlot=pf:FindFirstChild(r) end
             end

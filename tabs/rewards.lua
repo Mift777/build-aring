@@ -1,13 +1,13 @@
 return function(env)
     local T       = env.RewardsTab
     local Remotes = env.Remotes
-    local Lib     = env.Library
 
-    -- LEFT: Daily Rewards
-    local RewardBox = T:AddLeftGroupbox("Daily Rewards")
+    T:CreateSection("Recompensas Diárias")
 
-    RewardBox:AddToggle("AutoClaimDaily", {
-        Text = "Auto Claim Daily Reward", Default = false,
+    T:CreateToggle({
+        Name = "Auto Coletar Daily Reward",
+        CurrentValue = false,
+        Flag = "AutoDailyReward",
         Callback = function(val)
             _G.AutoClaimDailyReward = val
             if not val then return end
@@ -24,8 +24,10 @@ return function(env)
         end,
     })
 
-    RewardBox:AddToggle("AutoClaimPlaytime", {
-        Text = "Auto Claim Playtime Reward", Default = false,
+    T:CreateToggle({
+        Name = "Auto Coletar Playtime Reward",
+        CurrentValue = false,
+        Flag = "AutoPlaytimeReward",
         Callback = function(val)
             _G.AutoClaimPlaytimeReward = val
             if not val then return end
@@ -46,18 +48,20 @@ return function(env)
         end,
     })
 
-    -- RIGHT: Spin Wheel
-    local WheelBox = T:AddRightGroupbox("Spin Wheel")
+    T:CreateSection("Spin Wheel")
 
-    WheelBox:AddToggle("AutoSpinWheel", {
-        Text = "Auto Spin Wheel", Default = false,
+    T:CreateToggle({
+        Name = "Auto Girar Roleta",
+        CurrentValue = false,
+        Flag = "AutoSpinWheel",
         Callback = function(val)
             _G.AutoSpinWheel = val
             if not val then return end
             task.spawn(function()
                 while _G.AutoSpinWheel do
                     pcall(function()
-                        local r = Remotes:FindFirstChild("SpinWheel") and Remotes.SpinWheel:FindFirstChild("RequestSpin")
+                        local r = Remotes:FindFirstChild("SpinWheel")
+                                  and Remotes.SpinWheel:FindFirstChild("RequestSpin")
                         if r then r:InvokeServer(false) end
                     end)
                     task.wait(5)

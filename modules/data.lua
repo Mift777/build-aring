@@ -5,6 +5,50 @@ return function(env)
     local Shared            = env.Shared
     local parseMoney        = env.parseMoney
 
+    local rarityWeights = {
+        Common=1, Uncommon=2, Rare=3, Epic=4, Legendary=5,
+        Secret=6, Prismatic=7, Divine=8, Exotic=9, Transcended=10
+    }
+
+    local function getRarityFromEntry(entry)
+        if not entry then return "Unknown" end
+        local s = type(entry) == "string" and entry or tostring(entry)
+        local r = string.match(s, "%[(.-)%]")
+        return (r and r ~= "") and r or "Unknown"
+    end
+
+    local function getSeedNameFromEntry(entry)
+        if not entry then return "" end
+        local s = type(entry) == "string" and entry or tostring(entry)
+        return string.match(s, "%] (.+)") or s
+    end
+
+    -- Builds (sortedRarities, seedToRarity) from getIndexSeeds() output
+    local function buildRarityMaps(seedEntries)
+        local seedToRarity = {}
+        local raritySet = {}
+        for _, entry in ipairs(seedEntries or {}) do
+            local r = getRarityFromEntry(entry)
+            local n = getSeedNameFromEntry(entry)
+            if r ~= "Unknown" and n ~= "" then
+                seedToRarity[n] = r
+                raritySet[r] = true
+            end
+        end
+        local sortedRarities = {}
+        for r in pairs(raritySet) do table.insert(sortedRarities, r) end
+        table.sort(sortedRarities, function(a, b)
+            local wa = rarityWeights[a] or 99
+            local wb = rarityWeights[b] or 99
+            if wa ~= wb then return wa < wb end
+            return a < b
+        end)
+        if #sortedRarities == 0 then
+            sortedRarities = {"Common","Uncommon","Rare","Epic","Legendary","Secret","Prismatic","Divine","Exotic","Transcended"}
+        end
+        return sortedRarities, seedToRarity
+    end
+
     local function getMutationList()
         local mutations = {"Normal"}
         local src = Shared and Shared:FindFirstChild("MutationAppliers")
@@ -114,16 +158,34 @@ return function(env)
     end
 
     local function getAvailableGears()
-        local gears = {}
+        local gears, ferts, sprays, spraysNoAcid = {}, {}, {}, {}
         local assets = ReplicatedStorage:FindFirstChild("Assets")
         if assets then
             local gf = assets:FindFirstChild("Gear")
             if gf then
-                for _, g in ipairs(gf:GetChildren()) do table.insert(gears, g.Name) end
+                for _, g in ipairs(gf:GetChildren()) do
+                    local n = g.Name
+                    table.insert(gears, n)
+                    if string.find(n, "Fertilizer", 1, true) then table.insert(ferts, n) end
+                    if string.find(n, "Spray", 1, true) then table.insert(sprays, n) end
+                    if string.find(n, "Spray", 1, true) and not string.find(n, "Acid", 1, true) then
+                        table.insert(spraysNoAcid, n)
+                    end
+                end
             end
         end
-        table.sort(gears)
-        return gears
+        table.sort(gears); table.sort(ferts); table.sort(sprays); table.sort(spraysNoAcid)
+        if #ferts == 0 then
+            ferts = {"Bee Fertilizer","Normal Fertilizer","Scrappy Fertilizer","Strong Fertilizer","Super Fertilizer"}
+        end
+        if #spraysNoAcid == 0 then
+            spraysNoAcid = {"Autumn Spray","Cosmic Spray","Frozen Spray","Radioactive Spray","Rainbow Spray","Trucker Spray","Void Spray","Wet Spray"}
+        end
+        if #sprays == 0 then
+            sprays = {"Acid Spray"}
+            for _, v in ipairs(spraysNoAcid) do table.insert(sprays, v) end
+        end
+        return gears, ferts, sprays, spraysNoAcid
     end
 
     local function getEggSlotsInfo()
@@ -176,6 +238,9 @@ return function(env)
         return slots
     end
 
+    env.getRarityFromEntry    = getRarityFromEntry
+    env.getSeedNameFromEntry  = getSeedNameFromEntry
+    env.buildRarityMaps       = buildRarityMaps
     env.getMutationList       = getMutationList
     env.getIndexSeeds         = getIndexSeeds
     env.scanInventoryForSeeds = scanInventoryForSeeds

@@ -42,11 +42,12 @@ return function(env)
                 while _G.AutoUnlockFarmPlots do
                     local plot = findPlot()
                     if plot then
+                        -- Iterate ALL descendants, fire for every Dirt (no break - same as original)
                         for _, d in ipairs(plot:GetDescendants()) do
                             if not _G.AutoUnlockFarmPlots then break end
                             if d.Name == 'Dirt' then
                                 pcall(function() Remotes.UnlockPlot:FireServer(d) end)
-                                task.wait(2); break
+                                task.wait(2)
                             end
                         end
                     end

@@ -54,25 +54,80 @@ return function(env)
         return false
     end
 
+    -- Cached plot reference
+    local w = nil
+
     local function findMyPlot()
+        if w and w.Parent then return w end
+        w = nil
         local map = workspace:FindFirstChild("Map")
         if not map then return nil end
         local plotsFolder = map:FindFirstChild("Plots")
         if not plotsFolder then return nil end
+        -- 1: Owner value child
         for _, plot in ipairs(plotsFolder:GetChildren()) do
             local owner = plot:FindFirstChild("Owner")
-            if owner and owner.Value == LocalPlayer then return plot end
+            if owner and owner.Value == LocalPlayer then w = plot; return w end
         end
+        -- 2: GetPlot BindableFunction directly in Remotes
         local ok, result = pcall(function()
-            if Remotes and Remotes:FindFirstChild("Plot") and Remotes.Plot:FindFirstChild("GetPlot") then
-                return Remotes.Plot.GetPlot:InvokeServer()
+            if Remotes and Remotes:FindFirstChild("GetPlot") then
+                return Remotes.GetPlot:Invoke()
             end
         end)
-        if ok then
-            if typeof(result) == "Instance" then return result end
-            if typeof(result) == "string" and plotsFolder then return plotsFolder:FindFirstChild(result) end
+        if ok and result then
+            if typeof(result) == "Instance" then w = result; return w end
+            if typeof(result) == "string" then
+                local found = plotsFolder:FindFirstChild(result)
+                if found then w = found; return w end
+            end
+        end
+        -- 3: Text-label search
+        for _, plot in ipairs(plotsFolder:GetChildren()) do
+            for _, e in ipairs(plot:GetDescendants()) do
+                if e:IsA("TextLabel") or e:IsA("TextButton") then
+                    if string.find(string.lower(tostring(e.Text)), string.lower(LocalPlayer.Name), 1, true) then
+                        w = plot; return w
+                    end
+                end
+            end
+        end
+        -- 4: Proximity fallback
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local closest, minDist = nil, math.huge
+            for _, plot in ipairs(plotsFolder:GetChildren()) do
+                local ok2, pivot = pcall(function() return plot:GetPivot() end)
+                if ok2 then
+                    local dist = (hrp.Position - pivot.Position).Magnitude
+                    if dist < minDist then minDist = dist; closest = plot end
+                end
+            end
+            if closest then w = closest; return w end
         end
         return nil
+    end
+
+    local floorModelNames = {"", "SecondFloor", "ThirdFloor", "FourthFloor", "FifthFloor", "SixthFloor"}
+
+    local function getFloorFarmPlot(floor)
+        local plot = findMyPlot()
+        if not plot then return nil end
+        if floor == 1 then return plot:FindFirstChild("FarmPlot") end
+        local fname = floorModelNames[floor]
+        if not fname or fname == "" then return nil end
+        local floorModel = plot:FindFirstChild(fname)
+        return floorModel and floorModel:FindFirstChild("FarmPlot")
+    end
+
+    local function getAllDirt(farmPlot)
+        local result = {}
+        if not farmPlot then return result end
+        for _, d in ipairs(farmPlot:GetDescendants()) do
+            if d.Name == "Dirt" then table.insert(result, d) end
+        end
+        return result
     end
 
     local function getUpgradeCost(upgradeType, floorNum)
@@ -81,8 +136,7 @@ return function(env)
         local cfg = PlotUpgrades[upgradeType]
         if not cfg or floorNum <= 1 then return nil end
         if cfg.SignName == "UpgradeSign" then return nil end
-        local floorNames = {"","SecondFloor","ThirdFloor","FourthFloor","FifthFloor","SixthFloor"}
-        local floorPart = myPlot:FindFirstChild(floorNames[floorNum])
+        local floorPart = myPlot:FindFirstChild(floorModelNames[floorNum])
         if not floorPart then return nil end
         local sign = floorPart:FindFirstChild(cfg.SignName)
         if not sign then return nil end
@@ -180,6 +234,8 @@ return function(env)
     env.getCurrentMoney       = getCurrentMoney
     env.haveEnoughMoney       = haveEnoughMoney
     env.findMyPlot            = findMyPlot
+    env.getFloorFarmPlot      = getFloorFarmPlot
+    env.getAllDirt             = getAllDirt
     env.getUpgradeCost        = getUpgradeCost
     env.doPlotUpgrade         = doPlotUpgrade
     env.upgradeSeedLuck       = upgradeSeedLuck

@@ -180,3 +180,11 @@ return function(env)
             task.wait(5)
         end
     end)
+
+    -- Stock Info separado
+local StockBox = env.StockTab:AddLeftGroupbox("Live Shop Stock")
+local stockLbl = StockBox:AddLabel("Loading...")
+StockBox:AddButton({Text="Refresh", Func=function()
+    stockLbl:SetText(getShopInfo())
+end})
+task.spawn(function() task.wait(2); stockLbl:SetText(getShopInfo()) end)

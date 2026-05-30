@@ -5,14 +5,8 @@ return function(env)
     local LP        = env.LocalPlayer
     local findPlot  = env.findMyPlot
     local findSeed  = env.findSeedTool
-    local findCmpt  = env.findCompostSeed
-    local getSeedQty= env.getSeedQuantity
-    local clampIns  = env.clampInsertAmount
-    local getCmpRem = env.getCompostInsertRemote
     local pMoney    = env.parseMoney
     local haveMoney = env.haveEnoughMoney
-    local allSeeds  = env.getIndexSeeds
-    local getMuts   = env.getMutationList
 
     -- LEFT: Auto Farming
     local AutoBox = T:AddLeftGroupbox('Auto Farming')
@@ -78,7 +72,7 @@ return function(env)
                                 and p.ExpandSign.Screen.SurfaceGui:FindFirstChild('Expand')
                                 and p.ExpandSign.Screen.SurfaceGui.Expand:FindFirstChild('Btn')
                                 and p.ExpandSign.Screen.SurfaceGui.Expand.Btn:FindFirstChild('Txt')
-                            if txt and txt:IsA('TextLabel') and haveMoney(pMoney(txt.Text), 'Plot Expansion') then
+                            if txt and (txt:IsA('TextLabel') or txt:IsA('TextButton')) and haveMoney(pMoney(txt.Text), 'Plot Expansion') then
                                 ur:InvokeServer()
                             end
                         end
@@ -89,30 +83,35 @@ return function(env)
         end,
     })
 
-    AutoBox:AddSeparator()
-
     AutoBox:AddButton({
-        Text = 'Remove All Plants  [double-click]',
-        DoubleClick = true,
+        Text = 'Remove All Plants  [double-click]', DoubleClick = true,
         Func = function()
-            Lib:Notify('Removing all plants...', 10)
-            local plot = findPlot()
-            if not plot then return end
-            for _, d in ipairs(plot:GetDescendants()) do
-                if d.Name == 'Dirt' and d:GetAttribute('PlantLevel') ~= nil then
-                    pcall(function() Remotes.RemovePlant:FireServer(d) end)
-                    task.wait(0.3)
+            task.spawn(function()
+                Lib:Notify('Removing all plants...', 10)
+                local plot = findPlot()
+                if not plot then Lib:Notify('Plot not found.', 3); return end
+                for _, d in ipairs(plot:GetDescendants()) do
+                    if d.Name == 'Dirt' and d:GetAttribute('PlantLevel') ~= nil then
+                        pcall(function() Remotes.RemovePlant:FireServer(d) end)
+                        task.wait(0.3)
+                    end
                 end
-            end
-            Lib:Notify('All plants removed!', 3)
+                Lib:Notify('All plants removed!', 3)
+            end)
         end,
     })
 
     -- RIGHT: Seed Management
     local SeedBox = T:AddRightGroupbox('Seed Management')
 
+    local seedList = {'None'}
+    pcall(function()
+        local v = env.getIndexSeeds and env.getIndexSeeds() or {}
+        if #v > 0 then seedList = v end
+    end)
+
     SeedBox:AddDropdown('SeedSelect', {
-        Values = allSeeds(), Default = 1,
+        Values = seedList, Default = 1,
         Text = 'Seed Type to Plant',
         Callback = function(val) _G.SelectedSeedTrueName = val end,
     })
@@ -120,7 +119,7 @@ return function(env)
     SeedBox:AddButton({
         Text = 'Plant Selected Seed',
         Func = function()
-            if _G.SelectedSeedTrueName == 'None' then
+            if not _G.SelectedSeedTrueName or _G.SelectedSeedTrueName == 'None' then
                 Lib:Notify('Select a seed type first.', 3); return
             end
             task.spawn(function()
@@ -136,7 +135,7 @@ return function(env)
                         end
                     end
                 end
-                Lib:Notify(planted and 'Planted all plots!' or 'Ran out of seeds.', 4)
+                Lib:Notify(planted and 'Planted!' or 'No seeds left.', 3)
             end)
         end,
     })
@@ -145,12 +144,10 @@ return function(env)
         Text = 'Discard Selected Seed  [double-click]',
         DoubleClick = true,
         Func = function()
-            if _G.SelectedSeedTrueName == 'None' then
+            if not _G.SelectedSeedTrueName or _G.SelectedSeedTrueName == 'None' then
                 Lib:Notify('Select a seed type first.', 3); return
             end
-            if _G.IsDiscarding then
-                Lib:Notify('Discard already running.', 3); return
-            end
+            if _G.IsDiscarding then Lib:Notify('Discard already running.', 3); return end
             _G.IsDiscarding = true
             local target = _G.SelectedSeedTrueName
             Lib:Notify('Discarding ' .. target, 3)
@@ -178,108 +175,6 @@ return function(env)
 
     SeedBox:AddButton({
         Text = 'Stop Discard',
-        Func = function()
-            _G.IsDiscarding = false
-            Lib:Notify('Discard stopped.', 2)
-        end,
-    })
-
-    -- RIGHT: Composter (second right box)
-    local CompBox = T:AddRightGroupbox('Composter')
-
-    CompBox:AddDropdown('CompSeeds', {
-        Values = allSeeds(), Default = {}, Multi = true,
-        Text = 'Target Seeds (Empty = All)',
-        Callback = function(val) _G.TargetCompostSeeds = val end,
-    })
-
-    CompBox:AddDropdown('CompMuts', {
-        Values = getMuts(), Default = {}, Multi = true,
-        Text = 'Target Mutations (Empty = All)',
-        Callback = function(val) _G.TargetCompostMutations = val end,
-    })
-
-    CompBox:AddDropdown('CompFloor', {
-        Values = {'2', '3'}, Default = 1,
-        Text = 'Composter Floor',
-        Callback = function(val) _G.CompostFloor = tonumber(val) or 2 end,
-    })
-
-    CompBox:AddInput('CompMaxInsert', {
-        Default = '0', Numeric = true, Finished = true,
-        Text = 'Max Seeds Per Insert (0 = no limit)',
-        Callback = function(val)
-            local n = tonumber(val)
-            if not n or n < 0 or n % 1 ~= 0 then
-                _G.MaxCompostInsertAmount = 0
-                Options.CompMaxInsert:SetValue('0')
-            else
-                _G.MaxCompostInsertAmount = math.floor(n)
-            end
-        end,
-    })
-
-    CompBox:AddInput('CompLeverDelay', {
-        Default = '2', Numeric = true, Finished = true,
-        Text = 'Pull Lever Delay (seconds)',
-        Callback = function(val)
-            local n = tonumber(val)
-            _G.AutoPullComposterLeverDelaySeconds = (n and n >= 0) and n or 2
-        end,
-    })
-
-    CompBox:AddSeparator()
-
-    CompBox:AddToggle('AutoCompostAll', {
-        Text = 'Auto Compost ALL Seeds  [DANGER!]',
-        Default = false, Tooltip = 'Cannot be undone!',
-        Callback = function(val) _G.AutoCompostAllSeeds = val end,
-    })
-
-    CompBox:AddToggle('AutoCompostFiltered', {
-        Text = 'Auto Compost Filtered', Default = false,
-        Callback = function(val)
-            _G.AutoCompost = val
-            if not val then return end
-            task.spawn(function()
-                while _G.AutoCompost do
-                    local s = findCmpt()
-                    if s then
-                        local qty = clampIns(getSeedQty(s))
-                        local r = getCmpRem()
-                        if r then for i = 1, qty do r:FireServer(s); task.wait(0.1) end end
-                    end
-                    task.wait(0.5)
-                end
-            end)
-        end,
-    })
-
-    CompBox:AddToggle('AutoPullLever', {
-        Text = 'Auto Pull Composter Lever', Default = false,
-        Callback = function(val)
-            _G.AutoPullComposterLever = val
-            if not val then return end
-            task.spawn(function()
-                while _G.AutoPullComposterLever do
-                    pcall(function()
-                        if Remotes:FindFirstChild('Composter') and Remotes.Composter:FindFirstChild('PullLever') then
-                            Remotes.Composter.PullLever:FireServer()
-                        end
-                    end)
-                    task.wait(_G.AutoPullComposterLeverDelaySeconds)
-                end
-            end)
-        end,
-    })
-
-    CompBox:AddButton({
-        Text = 'Manual Insert (once)',
-        Func = function()
-            local s = findCmpt(); if not s then return end
-            local qty = clampIns(getSeedQty(s))
-            local r = getCmpRem()
-            if r then for i = 1, qty do r:FireServer(s); task.wait(0.1) end end
-        end,
+        Func = function() _G.IsDiscarding = false; Lib:Notify('Discard stopped.', 2) end,
     })
 end

@@ -404,7 +404,7 @@ return function(env)
             end,
         })
 
-        SprayBox:AddSeparator()
+        SprayBox:AddDivider()
 
         SprayBox:AddDropdown(P .. "AcidPlants", {
             Values = seedList, Default = {}, Multi = true,
@@ -518,7 +518,7 @@ return function(env)
                 end,
             })
 
-            CompBox:AddSeparator()
+            CompBox:AddDivider()
 
             local compostRunning = false
             local function startCompostLoop()
@@ -576,7 +576,7 @@ return function(env)
                 end,
             })
 
-            CompBox:AddSeparator()
+            CompBox:AddDivider()
 
             CompBox:AddInput(P .. "PullLeverDelay", {
                 Default = "60", Numeric = true, Finished = true,

@@ -183,21 +183,60 @@ return function(env)
     end)
 
     -- Stock Info na tab separada (env.StockTab criada no main.lua)
-        if env.StockTab then
-        local EggStockBox  = env.StockTab:AddLeftGroupbox("Egg Shop")
-        local GearStockBox = env.StockTab:AddRightGroupbox("Gear Shop")
+          if env.StockTab then
+        local EggBox  = env.StockTab:AddLeftGroupbox("Egg Shop")
+        local GearBox = env.StockTab:AddRightGroupbox("Gear Shop")
 
-        local eggLbl  = EggStockBox:AddLabel("Loading...")
-        local gearLbl = GearStockBox:AddLabel("Loading...")
+        local eggHeader = EggBox:AddLabel("Restocks: ?")
+        local eggLines  = {}
+        for i = 1, 5 do eggLines[i] = EggBox:AddLabel("") end
 
-        EggStockBox:AddButton({Text="Refresh", Func=function()
-            eggLbl:SetText(env.getEggShopInfo())
-            gearLbl:SetText(env.getGearShopInfo())
-        end})
+        local gearHeader = GearBox:AddLabel("In Stock:")
+        local gearLines  = {}
+        for i = 1, 8 do gearLines[i] = GearBox:AddLabel("") end
 
-        task.spawn(function()
-            task.wait(2)
-            eggLbl:SetText(env.getEggShopInfo())
-            gearLbl:SetText(env.getGearShopInfo())
-        end)
+        local function refreshStock()
+            local pm = workspace:FindFirstChild("PetMerchant")
+
+            -- Egg restock timer
+            if pm then
+                local sign = pm:FindFirstChild("MerchantSign")
+                local sg = sign and sign:FindFirstChildWhichIsA("SurfaceGui")
+                local tl = sg and sg:FindFirstChild("TimeLabel")
+                eggHeader:SetText("Restocks: " .. (tl and tl.Text or "?"))
+            end
+
+            -- Egg slots
+            local ei = 0
+            for i = 1, 5 do
+                local pod = pm and (pm:FindFirstChild("Podium"..i.."Stock") or pm:FindFirstChild("Podium"..i))
+                local el = pod and pod:FindFirstChild("EggLabel", true)
+                local pl = pod and pod:FindFirstChild("PriceLabel", true)
+                if el and el.Text ~= "" then
+                    ei = ei + 1
+                    if eggLines[ei] then
+                        eggLines[ei]:SetText(string.format("[%d] %s | %s", i, el.Text, pl and pl.Text or "?"))
+                    end
+                end
+            end
+            for i = ei + 1, 5 do if eggLines[i] then eggLines[i]:SetText("") end end
+
+            -- Gear in stock
+            local gi = 0
+            for _, gearName in ipairs(env.getAvailableGears()) do
+                local stock = env.getGearStock(gearName)
+                if stock > 0 then
+                    gi = gi + 1
+                    if gearLines[gi] then
+                        local price = env.getGearPriceFromGui(gearName)
+                        gearLines[gi]:SetText(string.format("[%dx] [%s] %s", stock, price, gearName))
+                    end
+                end
+            end
+            for i = gi + 1, 8 do if gearLines[i] then gearLines[i]:SetText("") end end
+            gearHeader:SetText(gi == 0 and "No gear in stock" or "In Stock (" .. gi .. "):")
+        end
+
+        EggBox:AddButton({Text = "Refresh", Func = refreshStock})
+        task.spawn(function() task.wait(2); refreshStock() end)
     end

@@ -183,12 +183,21 @@ return function(env)
     end)
 
     -- Stock Info na tab separada (env.StockTab criada no main.lua)
-    if env.StockTab then
-        local StockBox = env.StockTab:AddLeftGroupbox("Live Shop Stock")
-        local stockLbl = StockBox:AddLabel("Loading...")
-        StockBox:AddButton({Text="Refresh", Func=function()
-            stockLbl:SetText(getShopInfo())
+        if env.StockTab then
+        local EggStockBox  = env.StockTab:AddLeftGroupbox("Egg Shop")
+        local GearStockBox = env.StockTab:AddRightGroupbox("Gear Shop")
+
+        local eggLbl  = EggStockBox:AddLabel("Loading...")
+        local gearLbl = GearStockBox:AddLabel("Loading...")
+
+        EggStockBox:AddButton({Text="Refresh", Func=function()
+            eggLbl:SetText(env.getEggShopInfo())
+            gearLbl:SetText(env.getGearShopInfo())
         end})
-        task.spawn(function() task.wait(2); stockLbl:SetText(getShopInfo()) end)
+
+        task.spawn(function()
+            task.wait(2)
+            eggLbl:SetText(env.getEggShopInfo())
+            gearLbl:SetText(env.getGearShopInfo())
+        end)
     end
-end

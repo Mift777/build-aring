@@ -1,23 +1,15 @@
 return function(env)
-    local Players           = game:GetService("Players")
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local HttpService       = game:GetService("HttpService")
-    local VirtualUser       = game:GetService("VirtualUser")
-    local TeleportService   = game:GetService("TeleportService")
+    env.Players           = game:GetService("Players")
+    env.ReplicatedStorage = game:GetService("ReplicatedStorage")
+    env.RunService        = game:GetService("RunService")
+    env.TweenService      = game:GetService("TweenService")
+    env.TeleportService   = game:GetService("TeleportService")
+    env.LocalPlayer       = env.Players.LocalPlayer
+    env.PlayerGui         = env.LocalPlayer:WaitForChild("PlayerGui")
+    env.Shared            = env.ReplicatedStorage:FindFirstChild("Shared")
 
-    env.Players           = Players
-    env.ReplicatedStorage = ReplicatedStorage
-    env.HttpService       = HttpService
-    env.VirtualUser       = VirtualUser
-    env.TeleportService   = TeleportService
-    env.LocalPlayer       = Players.LocalPlayer
-    env.PlayerGui         = Players.LocalPlayer:WaitForChild("PlayerGui")
-    env.Remotes           = ReplicatedStorage:WaitForChild("Remotes", 10)
-    env.Shared            = ReplicatedStorage:WaitForChild("Shared", 10)
-
-    Players.LocalPlayer.Idled:Connect(function()
-        VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new())
-        print("[ArkhamHub] Anti-AFK triggered.")
+    local ok, r = pcall(function()
+        return env.ReplicatedStorage:WaitForChild("Remotes", 10)
     end)
+    env.Remotes = ok and r or env.ReplicatedStorage:FindFirstChild("Remotes")
 end

@@ -124,7 +124,7 @@ return function(env)
 
     local function rejoinServer()
         if queue_on_teleport then
-            queue_on_teleport("print('[LamduckHub] Rejoined!')")
+            queue_on_teleport("print('[ArkhamHub] Rejoined!')")
         end
         env.TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
     end

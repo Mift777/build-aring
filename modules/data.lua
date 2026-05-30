@@ -206,17 +206,18 @@ return function(env)
         return table.concat(lines, "\n")
     end
 
-   local function getGearShopInfo()
+  local function getGearShopInfo()
     local lines = {"--- GEAR SHOP ---"}
     local hasStock = false
     for _, gearName in ipairs(getAvailableGears()) do
         local stock = getGearStock(gearName)
-        local price = getGearPriceFromGui(gearName)
-        local status = stock == 0 and "[OUT]" or ("[" .. stock .. "x]")
-        table.insert(lines, string.format("- %s [%s] %s", status, price, gearName))
-        if stock > 0 then hasStock = true end
+        if stock > 0 then
+            local price = getGearPriceFromGui(gearName)
+            table.insert(lines, string.format("[%dx] [%s] %s", stock, price, gearName))
+            hasStock = true
+        end
     end
-    if not hasStock then table.insert(lines, "- All gears out of stock!") end
+    if not hasStock then table.insert(lines, "No gears in stock.") end
     return table.concat(lines, "\n")
 end
 

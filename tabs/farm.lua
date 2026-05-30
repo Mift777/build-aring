@@ -33,20 +33,12 @@ return function(env)
         end,
     })
 
-            local LOCKED_COLOR = Color3.new(0.415686, 0.223529, 0.0352941)
 local function isLockedDirt(d)
     if d.Name ~= 'Dirt' then return false end
     if not d:IsA('BasePart') then return false end
-    local parentName = d.Parent and d.Parent.Name or ""
-    local gpName     = d.Parent and d.Parent.Parent and d.Parent.Parent.Name or ""
-    if tonumber(parentName) then return false end  -- LOD folder de planta
-    if gpName == "Dirt" then return false end       -- nested dentro de plant model
-    local c = d.Color
-    return math.abs(c.R - LOCKED_COLOR.R) < 0.02
-        and math.abs(c.G - LOCKED_COLOR.G) < 0.02
-        and math.abs(c.B - LOCKED_COLOR.B) < 0.02
+    return d.Parent:FindFirstChild('Grass') ~= nil
 end
-
+    
     AutoBox:AddToggle('AutoUnlockPlots', {
         Text = 'Auto Unlock Farm Plots', Default = false,
         Callback = function(val)

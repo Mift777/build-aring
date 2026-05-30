@@ -16,21 +16,21 @@ return function(env)
     local buyEgg      = env.buyEgg
 
     -- LEFT: Seed Gacha
-    local GachaBox = T:AddLeftGroupbox("Seed Gacha (Roll & Buy)")
+    local GachaBox = T:AddLeftGroupbox('Seed Gacha (Roll & Buy)')
 
-    GachaBox:AddToggle("AutoRollBuyAll", {
-        Text = "Auto Roll & Buy ALL Seeds", Default = false,
+    GachaBox:AddToggle('AutoRollBuyAll', {
+        Text = 'Auto Roll & Buy ALL Seeds', Default = false,
         Callback = function(val) _G.AutoRollAndBuyAll = val end,
     })
 
-    GachaBox:AddDropdown("GachaSeeds", {
+    GachaBox:AddDropdown('GachaSeeds', {
         Values = allSeeds(), Default = {}, Multi = true,
-        Text = "Seeds to Snipe",
+        Text = 'Seeds to Snipe',
         Callback = function(val) _G.TargetGachaSeeds = val end,
     })
 
-    GachaBox:AddToggle("AutoRollBuySelected", {
-        Text = "Auto Roll & Buy SELECTED", Default = false,
+    GachaBox:AddToggle('AutoRollBuySelected', {
+        Text = 'Auto Roll & Buy SELECTED', Default = false,
         Callback = function(val) _G.AutoRollAndBuySelected = val end,
     })
 
@@ -40,17 +40,17 @@ return function(env)
                 local stands = {}
                 local plot = findPlot()
                 if plot then
-                    local roller = plot:FindFirstChild("SeedRoller")
+                    local roller = plot:FindFirstChild('SeedRoller')
                     if roller then
                         for i = 1, 6 do
-                            local s = roller:FindFirstChild("Stand" .. i)
+                            local s = roller:FindFirstChild('Stand' .. i)
                             if s then stands[i] = s:GetPivot().Position end
                         end
                     end
                 end
                 local avail = {}
                 for _, m in ipairs(workspace:GetChildren()) do
-                    if m:IsA("Model") and m:FindFirstChild("BuySeed", true) then
+                    if m:IsA('Model') and m:FindFirstChild('BuySeed', true) then
                         local mp = m:GetPivot().Position
                         local near, minD = nil, math.huge
                         for idx, pos in pairs(stands) do
@@ -58,10 +58,10 @@ return function(env)
                             if d < minD then minD=d; near=idx end
                         end
                         if near and minD < 15 then
-                            local sg = m:FindFirstChild("SeedGui", true)
+                            local sg = m:FindFirstChild('SeedGui', true)
                             if sg then
                                 for _, desc in ipairs(sg:GetDescendants()) do
-                                    if desc:IsA("TextLabel") and string.find(desc.Text, "$") then
+                                    if desc:IsA('TextLabel') and string.find(desc.Text, '$') then
                                         avail[m.Name] = {standIdx=near, price=pMoney(desc.Text)}
                                     end
                                 end
@@ -72,14 +72,13 @@ return function(env)
                 local function buyAvail(filter)
                     if next(avail) then
                         for name, info in pairs(avail) do
-                            if (not filter or filter[name]) and haveMoney(info.price, "Seed", name) then
+                            if (not filter or filter[name]) and haveMoney(info.price, 'Seed', name) then
                                 pcall(function() Remotes.BuySeed:FireServer(info.standIdx) end)
                                 task.wait(0.5)
                             end
                         end
                     else
-                        pcall(function() Remotes.RollSeeds:FireServer() end)
-                        task.wait(3.5)
+                        pcall(function() Remotes.RollSeeds:FireServer() end); task.wait(3.5)
                     end
                 end
                 if _G.AutoRollAndBuyAll then buyAvail(nil)
@@ -90,21 +89,21 @@ return function(env)
     end)
 
     -- RIGHT: Gear Shop
-    local GearBox = T:AddRightGroupbox("Gear Shop")
+    local GearBox = T:AddRightGroupbox('Gear Shop')
 
-    GearBox:AddToggle("AutoBuyAllGears", {
-        Text = "Auto Buy All Available Gears", Default = false,
+    GearBox:AddToggle('AutoBuyAllGears', {
+        Text = 'Auto Buy All Available Gears', Default = false,
         Callback = function(val) _G.AutoBuyAllGears = val end,
     })
 
-    GearBox:AddDropdown("TargetGears", {
+    GearBox:AddDropdown('TargetGears', {
         Values = getGears(), Default = {}, Multi = true,
-        Text = "Select Gears to Buy",
+        Text = 'Select Gears to Buy',
         Callback = function(val) _G.TargetBuyGears = val end,
     })
 
-    GearBox:AddToggle("AutoBuySelGears", {
-        Text = "Auto Buy Selected Gears", Default = false,
+    GearBox:AddToggle('AutoBuySelGears', {
+        Text = 'Auto Buy Selected Gears', Default = false,
         Callback = function(val) _G.AutoBuySelectedGears = val end,
     })
 
@@ -124,10 +123,10 @@ return function(env)
     end)
 
     -- LEFT: Egg Shop
-    local EggBox = T:AddLeftGroupbox("Egg Shop")
+    local EggBox = T:AddLeftGroupbox('Egg Shop')
 
-    EggBox:AddToggle("AutoUnlockEggSlots", {
-        Text = "Auto Unlock Egg Slots", Default = false,
+    EggBox:AddToggle('AutoUnlockEggSlots', {
+        Text = 'Auto Unlock Egg Slots', Default = false,
         Callback = function(val) _G.AutoUnlockEggSlots = val end,
     })
 
@@ -137,10 +136,10 @@ return function(env)
             if _G.AutoUnlockEggSlots then
                 for _, si in ipairs(eggSlots) do
                     if not _G.SessionUnlockedEggSlots[si.EggSlotNumber]
-                        and haveMoney(si.UnlockPrice, "Unlock Egg Slot " .. si.EggSlotNumber) then
+                        and haveMoney(si.UnlockPrice, 'Unlock Egg Slot ' .. si.EggSlotNumber) then
                         pcall(function()
-                            if Remotes:FindFirstChild("EggShop") and Remotes.EggShop:FindFirstChild("Transaction") then
-                                Remotes.EggShop.Transaction:InvokeServer("UnlockSlot", si.EggSlotNumber)
+                            if Remotes:FindFirstChild('EggShop') and Remotes.EggShop:FindFirstChild('Transaction') then
+                                Remotes.EggShop.Transaction:InvokeServer('UnlockSlot', si.EggSlotNumber)
                                 _G.SessionUnlockedEggSlots[si.EggSlotNumber] = true
                             end
                         end)
@@ -152,19 +151,19 @@ return function(env)
         end
     end)
 
-    EggBox:AddToggle("AutoBuyAllEggs", {
-        Text = "Auto Buy All Available Eggs", Default = false,
+    EggBox:AddToggle('AutoBuyAllEggs', {
+        Text = 'Auto Buy All Available Eggs', Default = false,
         Callback = function(val) _G.AutoBuyAllEggs = val end,
     })
 
-    EggBox:AddDropdown("TargetEggs", {
+    EggBox:AddDropdown('TargetEggs', {
         Values = getEggTypes(), Default = {}, Multi = true,
-        Text = "Select Eggs to Buy",
+        Text = 'Select Eggs to Buy',
         Callback = function(val) _G.TargetEggShopEggs = val end,
     })
 
-    EggBox:AddToggle("AutoBuySelEggs", {
-        Text = "Auto Buy Selected Eggs", Default = false,
+    EggBox:AddToggle('AutoBuySelEggs', {
+        Text = 'Auto Buy Selected Eggs', Default = false,
         Callback = function(val) _G.AutoBuySelectedEggs = val end,
     })
 
@@ -182,13 +181,9 @@ return function(env)
         end
     end)
 
-    -- Stock Info na tab separada (env.StockTab criada no main.lua)
-    if env.StockTab then
-        local StockBox = env.StockTab:AddLeftGroupbox("Live Shop Stock")
-        local stockLbl = StockBox:AddLabel("Loading...")
-        StockBox:AddButton({Text="Refresh", Func=function()
-            stockLbl:SetText(getShopInfo())
-        end})
-        task.spawn(function() task.wait(2); stockLbl:SetText(getShopInfo()) end)
-    end
+    -- RIGHT: Live Stock
+    local StockBox = T:AddRightGroupbox('Live Shop Stock')
+    local stockLbl = StockBox:AddLabel('Loading shop data...')
+    StockBox:AddButton({Text='Refresh Stock', Func=function() stockLbl:SetText(getShopInfo()) end})
+    task.spawn(function() task.wait(2); stockLbl:SetText(getShopInfo()) end)
 end

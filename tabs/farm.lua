@@ -45,9 +45,19 @@ return function(env)
                     if not plot then return end
                     local unlockRemote = Remotes:FindFirstChild('UnlockPlot')
                     if not unlockRemote then return end
+                    local char = LP.Character
+                    local hrp  = char and char:FindFirstChild('HumanoidRootPart')
                     for _, d in ipairs(plot:GetDescendants()) do
                         if not _G.AutoUnlockFarmPlots then break end
                         if d.Name == 'Dirt' and #d:GetChildren() == 0 then
+                            if hrp then
+                                local pos = d:IsA('BasePart') and d.Position
+                                    or (d:IsA('Model') and d.PrimaryPart and d.PrimaryPart.Position)
+                                if pos then
+                                    hrp.CFrame = CFrame.new(pos + Vector3.new(0, 5, 0))
+                                    task.wait(0.3)
+                                end
+                            end
                             unlockRemote:FireServer(d)
                             task.wait(1)
                         end

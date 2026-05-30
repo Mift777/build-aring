@@ -32,7 +32,12 @@ env.UISettingsTab = env.Window:AddTab("UI Settings")
 
 local function loadModule(path)
     local ok, err = pcall(function()
-        loadstring(game:HttpGet(BASE .. path))(env)
+        local moduleFunc = loadstring(game:HttpGet(BASE .. path))()
+        if moduleFunc then
+            moduleFunc(env)
+        else
+            print("[ArkhamHub] WARN: " .. path .. " retornou nil")
+        end
     end)
     if not ok then
         print("[ArkhamHub] FAIL: " .. path .. " | " .. tostring(err))

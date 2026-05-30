@@ -13,9 +13,9 @@ return function(env)
     local buyGear     = env.buyGear
     local buyEgg      = env.buyEgg
 
-    local seedList    = {}; pcall(function() seedList    = allSeeds()    or {} end)
-    local gearList    = {}; pcall(function() gearList    = getGears()    or {} end)
-    local eggTypeList = {}; pcall(function() eggTypeList = getEggTypes() or {} end)
+    local seedList    = {"None"}; pcall(function() local v = allSeeds();    if v and #v > 0 then seedList    = v end end)
+local gearList    = {"None"}; pcall(function() local v = getGears();    if v and #v > 0 then gearList    = v end end)
+local eggTypeList = {"None"}; pcall(function() local v = getEggTypes(); if v and #v > 0 then eggTypeList = v end end)
 
     -- LEFT: Seed Gacha
     local GachaBox = T:AddLeftGroupbox("Seed Gacha (Roll & Buy)")

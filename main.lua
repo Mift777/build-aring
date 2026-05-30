@@ -27,7 +27,8 @@ env.UISettingsTab = env.Window:AddTab("UI Settings")
 
 local function loadModule(path)
     local ok, err = pcall(function()
-        local moduleFunc = loadstring(game:HttpGet(BASE .. path))()
+        local url = BASE .. path .. "?cb=" .. tostring(math.floor(tick()))
+        local moduleFunc = loadstring(game:HttpGet(url))()
         if moduleFunc then
             moduleFunc(env)
         else

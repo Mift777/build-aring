@@ -7,12 +7,12 @@ local BASE = "https://raw.githubusercontent.com/Mift777/build-aring/main/"
 local env = {}
 
 env.Window = Helix:CreateWindow({
-    Title      = "Build A Ring Farm",
-    Subtitle   = "Arkham Hub",
-    Width      = 560,
-    Height     = 430,
-    Accent     = Color3.fromRGB(75, 180, 140),
-    ToggleKey  = Enum.KeyCode.RightShift,
+    Title     = "Build A Ring Farm",
+    Discord   = "discord.gg/GMWtZFPfbA",
+    Width     = 560,
+    Height    = 430,
+    Accent    = Color3.fromRGB(75, 180, 140),
+    ToggleKey = Enum.KeyCode.RightShift,
 })
 
 env.FarmTab     = env.Window:CreateTab("Farming",   4483362458)

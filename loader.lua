@@ -23,7 +23,7 @@ local Config = {
     Secret          = "92513198",
 
     -- [3] Scripts & Links
-    MainScriptURL   = "https://raw.githubusercontent.com/Mift777/chute-lucky/refs/heads/main/main.lua",
+    MainScriptURL   = "https://raw.githubusercontent.com/Mift777/build-aring/refs/heads/main/main.lua",
 
     -- [4] Social Media Settings
     ShowDiscord     = true,

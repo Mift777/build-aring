@@ -40,7 +40,7 @@ end
 -- 👇 YOUR MAIN SCRIPT CODE STARTS HERE 👇
 -------------------------------------------------------------------------------
 
-print(ProtectionConfig.HubName .. " Loaded Successfully!"
+print(ProtectionConfig.HubName .. " Loaded Successfully!")
 
 local Helix = loadstring(game:HttpGet(
     "https://raw.githubusercontent.com/Mift777/arkham-ui/main/helix2.lua?cb=" .. math.floor(tick())

@@ -11,7 +11,7 @@ env.Window = Helix:CreateWindow({
     Subtitle   = "Arkham Hub",
     Width      = 560,
     Height     = 430,
-    Accent     = Color3.fromRGB(30, 80, 180),
+    Accent     = Color3.fromRGB(75, 180, 140),
     ToggleKey  = Enum.KeyCode.RightShift,
 })
 

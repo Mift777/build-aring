@@ -349,7 +349,6 @@ local function CreateGUI()
         Btn.AutoButtonColor = false
         corner(Btn, 8)
         stroke(Btn, baseCol, 1.2)
-        gradient(Btn, Theme.Field, Theme.PanelDark, 90)
 
         local Icon = Instance.new("ImageLabel", Btn)
         Icon.Size = UDim2.new(0, 20, 0, 20)

@@ -199,16 +199,48 @@ local function eldritchPulse(sk)
 end
 
 local function CreateGUI()
-    local player   = game:GetService("Players").LocalPlayer
-    local coreGui  = game:GetService("CoreGui")
-    local targetParent = pcall(function() return coreGui end) and coreGui or player:WaitForChild("PlayerGui")
+    local player = game:GetService("Players").LocalPlayer
+
+    -- resolve safest parent (resist CoreGui auto-cleanup)
+    local function resolveParent()
+        -- 1] gethui(): hidden protected container, survives best
+        if typeof(gethui) == "function" then
+            local ok, hui = pcall(gethui)
+            if ok and hui then return hui end
+        end
+        -- 2] CoreGui (protect if executor supports it)
+        local okC, coreGui = pcall(function() return game:GetService("CoreGui") end)
+        if okC and coreGui then return coreGui end
+        -- 3] fallback PlayerGui
+        return player:WaitForChild("PlayerGui")
+    end
+    local targetParent = resolveParent()
 
     if targetParent:FindFirstChild("OYB_KeySystem") then targetParent.OYB_KeySystem:Destroy() end
 
-    local ScreenGui = Instance.new("ScreenGui", targetParent)
+    local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "OYB_KeySystem"
     ScreenGui.ResetOnSpawn = false
     ScreenGui.IgnoreGuiInset = true
+    ScreenGui.DisplayOrder = 999
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+    -- protect from anti-cheat sweeps if executor allows
+    local protect = (syn and syn.protect_gui) or protect_gui
+    if typeof(protect) == "function" then pcall(protect, ScreenGui) end
+    ScreenGui.Parent = targetParent
+
+    -- watchdog: re-attach if removed by anti-cheat (unless user closed)
+    local userClosed = false
+    ScreenGui.AncestryChanged:Connect(function(_, parent)
+        if not userClosed and parent == nil then
+            task.wait()
+            pcall(function()
+                if typeof(protect) == "function" then pcall(protect, ScreenGui) end
+                ScreenGui.Parent = resolveParent()
+            end)
+        end
+    end)
 
     -- ambient eldritch drone
     if Config.EnableSound then
@@ -324,7 +356,7 @@ local function CreateGUI()
     CloseBtn.Font = BOLD
     CloseBtn.TextSize = 18
     CloseBtn.ZIndex = 10
-    CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
+    CloseBtn.MouseButton1Click:Connect(function() userClosed = true ScreenGui:Destroy() end)
 
     -- divider
     local Div = Instance.new("Frame", MainFrame)
@@ -477,6 +509,7 @@ local function CreateGUI()
             Status.Text = "The seal accepts you. Loading..."
             Status.TextColor3 = Theme.Verdigris
             task.wait(0.5)
+            userClosed = true
             ScreenGui:Destroy()
             StartMainScript()
         else

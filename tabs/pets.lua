@@ -1,8 +1,8 @@
 return function(env)
-    local T       = env.PetsTab
-    local Remotes = env.Remotes
-    local LP      = env.LocalPlayer
-    local findPlot= env.findMyPlot
+    local T        = env.PetsTab
+    local Remotes  = env.Remotes
+    local LP       = env.LocalPlayer
+    local findPlot = env.findMyPlot
 
     local function parsePet(inst)
         if not inst then return nil end
@@ -10,7 +10,7 @@ return function(env)
         local name = inst:GetAttribute("TrueName") or inst:GetAttribute("trueName") or inst.Name
         local level= tonumber(inst:GetAttribute("PetLevel") or inst:GetAttribute("Level")) or 1
         local earn = tonumber(inst:GetAttribute("EarningsMultiplier") or inst:GetAttribute("Earnings")) or 0
-        return {instance=inst, petKey=key, petName=name, level=level, earnings=earn}
+        return {instance=inst,petKey=key,petName=name,level=level,earnings=earn}
     end
 
     local function getPlotPets()
@@ -48,8 +48,8 @@ return function(env)
 
     local function getTreatTypes()
         local t={}
-        local gs = game:GetService("ReplicatedStorage"):FindFirstChild("GearStocks")
-        local ps = gs and gs:FindFirstChild(LP.Name)
+        local gs=game:GetService("ReplicatedStorage"):FindFirstChild("GearStocks")
+        local ps=gs and gs:FindFirstChild(LP.Name)
         if ps then
             for _,item in ipairs(ps:GetChildren()) do
                 if string.find(item.Name,"Treat",1,true) then table.insert(t,item.Name) end
@@ -67,9 +67,10 @@ return function(env)
         return true
     end
 
-    T:CreateSection("Gerenciar Pets")
+    -- ── Gerenciar Pets ────────────────────────────────────────
+    local SecMgr = T:CreateSection("Gerenciar Pets")
 
-    T:CreateButton({Name="Desequipar Todos Pets",Callback=function()
+    SecMgr:AddButton({Name="Desequipar Todos Pets", Callback=function()
         task.spawn(function()
             local pets=getPlotPets()
             if #pets==0 then env.Window:Notify({Title="Pets",Content="Nenhum pet no plot.",Duration=2}); return end
@@ -78,7 +79,7 @@ return function(env)
         end)
     end})
 
-    T:CreateButton({Name="Equipar 3 Melhores Pets (Earnings)",Callback=function()
+    SecMgr:AddButton({Name="Equipar 3 Melhores Pets (Earnings)", Callback=function()
         task.spawn(function()
             local invPets=getInvPets()
             if #invPets==0 then env.Window:Notify({Title="Pets",Content="Sem pets no inventário.",Duration=2}); return end
@@ -99,22 +100,22 @@ return function(env)
         end)
     end})
 
-    T:CreateSection("Alimentar Pets")
+    -- ── Alimentar Pets ────────────────────────────────────────
+    local SecFeed = T:CreateSection("Alimentar Pets")
 
     local treats=getTreatTypes()
-    T:CreateDropdown({Name="Selecionar Treats",Options=#treats>0 and treats or {"Nenhum encontrado"},
-        CurrentOption={},MultipleOptions=true,Flag="PetTreats",
-        Callback=function(opts)
+    SecFeed:AddDropdown({Name="Selecionar Treats",
+        Options=#treats>0 and treats or {"Nenhum encontrado"}, Multi=true,
+        Callback=function(sel)
             _G.TargetPetTreatNames={}
-            for _,v in ipairs(opts) do _G.TargetPetTreatNames[v]=true end
+            for v in pairs(sel) do _G.TargetPetTreatNames[v]=true end
         end})
 
     local feedRunning=false
-    T:CreateToggle({Name="Auto Alimentar Pets",CurrentValue=false,Flag="AutoFeedPets",
+    SecFeed:AddToggle({Name="Auto Alimentar Pets", Default=false,
         Callback=function(val)
             _G.AutoFeedPets=val
-            if not val or feedRunning then return end
-            feedRunning=true
+            if not val or feedRunning then return end; feedRunning=true
             task.spawn(function()
                 while _G.AutoFeedPets do
                     pcall(function()
@@ -146,20 +147,19 @@ return function(env)
             end)
         end})
 
-    T:CreateSection("Upgrade Pets")
+    -- ── Upgrade Pets ──────────────────────────────────────────
+    local SecUpg = T:CreateSection("Upgrade Pets")
 
-    T:CreateInput({Name="Nível Máximo",CurrentValue="10",PlaceholderText="10",
-        RemoveTextAfterFocusLost=false,Flag="PetMaxLvl",
+    SecUpg:AddInput({Name="Nível Máximo", Placeholder="10",
         Callback=function(val)
             local n=tonumber(val); _G.TargetPetUpgradeLevel=(n and n>=1) and math.floor(n) or 10
         end})
 
     local upgRunning=false
-    T:CreateToggle({Name="Auto Upgrade Pets",CurrentValue=false,Flag="AutoUpgPets",
+    SecUpg:AddToggle({Name="Auto Upgrade Pets", Default=false,
         Callback=function(val)
             _G.AutoUpgradePets=val
-            if not val or upgRunning then return end
-            upgRunning=true
+            if not val or upgRunning then return end; upgRunning=true
             task.spawn(function()
                 while _G.AutoUpgradePets do
                     pcall(function()
@@ -181,7 +181,8 @@ return function(env)
             end)
         end})
 
-    T:CreateSection("Vender Pets")
+    -- ── Vender Pets ───────────────────────────────────────────
+    local SecSell = T:CreateSection("Vender Pets")
 
     local function getAvailPets()
         local names,seen={},{}
@@ -197,19 +198,17 @@ return function(env)
         table.sort(names); return #names>0 and names or {"Nenhum"}
     end
 
-    T:CreateDropdown({Name="Pets para Vender",Options=getAvailPets(),CurrentOption={},MultipleOptions=true,
-        Flag="PetSellSel",
-        Callback=function(opts)
+    SecSell:AddDropdown({Name="Pets para Vender", Options=getAvailPets(), Multi=true,
+        Callback=function(sel)
             _G.TargetPetSellNames={}
-            for _,v in ipairs(opts) do _G.TargetPetSellNames[v]=true end
+            for v in pairs(sel) do _G.TargetPetSellNames[v]=true end
         end})
 
     local sellRunning=false
-    T:CreateToggle({Name="Auto Vender Pets Selecionados",CurrentValue=false,Flag="AutoSellPets",
+    SecSell:AddToggle({Name="Auto Vender Pets Selecionados", Default=false,
         Callback=function(val)
             _G.AutoSellPets=val
-            if not val or sellRunning then return end
-            sellRunning=true
+            if not val or sellRunning then return end; sellRunning=true
             task.spawn(function()
                 while _G.AutoSellPets do
                     pcall(function()
@@ -217,8 +216,7 @@ return function(env)
                         if next(_G.TargetPetSellNames)==nil then return end
                         for _,pet in ipairs(getInvPets()) do
                             if not _G.AutoSellPets then break end
-                            local lname=string.lower(pet.petName or "")
-                            local elig=false
+                            local lname=string.lower(pet.petName or ""); local elig=false
                             for t in pairs(_G.TargetPetSellNames) do
                                 if string.find(lname,string.lower(t),1,true) then elig=true; break end
                             end

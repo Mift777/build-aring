@@ -1,30 +1,30 @@
-local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+local Helix = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/Mift777/arkham-ui/main/helix.lua"
+))()
 
 local BASE = "https://raw.githubusercontent.com/Mift777/build-aring/main/"
 
 local env = {}
 
-env.Window = Rayfield:CreateWindow({
-    Name           = "Build A Ring Farm",
-    Icon           = 0,
-    LoadingTitle   = "Build A Ring",
-    LoadingSubtitle = "Carregando módulos...",
-    Theme          = "DarkBlue",
-    DisableRayfieldPrompts  = false,
-    DisableBuildWarnings    = false,
+env.Window = Helix:CreateWindow({
+    Title      = "Build A Ring Farm",
+    Subtitle   = "Arkham Hub",
+    Width      = 560,
+    Height     = 430,
+    Accent     = Color3.fromRGB(110, 72, 248),
+    ToggleKey  = Enum.KeyCode.RightShift,
 })
 
--- Tabs
-env.FarmTab     = env.Window:CreateTab("Farming",    4483362458)
-env.Floor1Tab   = env.Window:CreateTab("Floor 1",    4483362458)
-env.Floor2Tab   = env.Window:CreateTab("Floor 2",    4483362458)
-env.Floor3Tab   = env.Window:CreateTab("Floor 3",    4483362458)
-env.UpgradesTab = env.Window:CreateTab("Upgrades",   4483362458)
-env.ShopTab     = env.Window:CreateTab("Shop",       4483362458)
-env.PetsTab     = env.Window:CreateTab("Pets",       4483362458)
-env.EventsTab   = env.Window:CreateTab("Events",     4483362458)
-env.RewardsTab  = env.Window:CreateTab("Rewards",    4483362458)
-env.UtilsTab    = env.Window:CreateTab("Utilities",  4483362458)
+env.FarmTab     = env.Window:CreateTab("Farming",   4483362458)
+env.Floor1Tab   = env.Window:CreateTab("Floor 1",   4483362458)
+env.Floor2Tab   = env.Window:CreateTab("Floor 2",   4483362458)
+env.Floor3Tab   = env.Window:CreateTab("Floor 3",   4483362458)
+env.UpgradesTab = env.Window:CreateTab("Upgrades",  4483362458)
+env.ShopTab     = env.Window:CreateTab("Shop",      4483362458)
+env.PetsTab     = env.Window:CreateTab("Pets",      4483362458)
+env.EventsTab   = env.Window:CreateTab("Events",    4483362458)
+env.RewardsTab  = env.Window:CreateTab("Rewards",   4483362458)
+env.UtilsTab    = env.Window:CreateTab("Utilities", 4483362458)
 
 local function loadModule(path)
     local ok, err = pcall(function()

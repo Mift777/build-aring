@@ -1,13 +1,14 @@
 return function(env)
-    local T       = env.EventsTab
-    local Remotes = env.Remotes
-    local LP      = env.LocalPlayer
-    local allSeeds= env.getIndexSeeds
-    local findSeed= env.findSeedTool
+    local T        = env.EventsTab
+    local Remotes  = env.Remotes
+    local LP       = env.LocalPlayer
+    local allSeeds = env.getIndexSeeds
+    local findSeed = env.findSeedTool
 
-    T:CreateSection("Plant Rush")
+    -- ── Plant Rush ────────────────────────────────────────────
+    local SecPR = T:CreateSection("Plant Rush")
 
-    T:CreateToggle({Name="Auto Atirar Plant Rush",CurrentValue=false,Flag="AutoPlantRush",
+    SecPR:AddToggle({Name="Auto Atirar Plant Rush", Default=false,
         Callback=function(val)
             _G.AutoPlantRush=val
             if not val then return end
@@ -37,7 +38,7 @@ return function(env)
             end)
         end})
 
-    T:CreateToggle({Name="Auto Coletar Boss Drops",CurrentValue=false,Flag="AutoBossDrops",
+    SecPR:AddToggle({Name="Auto Coletar Boss Drops", Default=false,
         Callback=function(val)
             _G.AutoClaimPlantRushBossDrop=val
             if not val then return end
@@ -67,9 +68,10 @@ return function(env)
             end)
         end})
 
-    T:CreateSection("Queen Bee")
+    -- ── Queen Bee ─────────────────────────────────────────────
+    local SecBee = T:CreateSection("Queen Bee")
 
-    T:CreateToggle({Name="Auto Coletar Honeycomb",CurrentValue=false,Flag="AutoHoneycomb",
+    SecBee:AddToggle({Name="Auto Coletar Honeycomb", Default=false,
         Callback=function(val)
             _G.AutoCollectQueenBeeHoneycomb=val
             if not val then return end
@@ -128,7 +130,7 @@ return function(env)
         return c(LP.Character) or c(LP:FindFirstChild("Backpack"))
     end
 
-    T:CreateToggle({Name="Auto Submeter Honey Token",CurrentValue=false,Flag="AutoHoneyToken",
+    SecBee:AddToggle({Name="Auto Submeter Honey Token", Default=false,
         Callback=function(val)
             _G.AutoSubmitQueenBeeHoneyToken=val
             if not val then return end
@@ -152,29 +154,30 @@ return function(env)
             end)
         end})
 
-    T:CreateSection("Seed Collector")
+    -- ── Seed Collector ────────────────────────────────────────
+    local SecColl = T:CreateSection("Seed Collector")
 
     local seedList={"None"}; pcall(function()
         local v=allSeeds(); if v and #v>0 then seedList=v end
     end)
 
-    T:CreateDropdown({Name="Seeds para Submeter",Options=seedList,CurrentOption={},MultipleOptions=true,
-        Flag="CollectorSeeds",
-        Callback=function(opts)
+    SecColl:AddDropdown({Name="Seeds para Submeter", Options=seedList, Multi=true,
+        Callback=function(sel)
             _G.TargetSeedCollectorSubmitSeeds={}
-            for _,v in ipairs(opts) do
-                local n=string.match(v,"%] (.+)") or v; _G.TargetSeedCollectorSubmitSeeds[n]=true
+            for v in pairs(sel) do
+                local n=string.match(v,"%] (.+)") or v
+                _G.TargetSeedCollectorSubmitSeeds[n]=true
             end
         end})
 
-    T:CreateButton({Name="Limpar Alvos Collector",Callback=function()
+    SecColl:AddButton({Name="Limpar Alvos Collector", Callback=function()
         _G.TargetSeedCollectorSubmitSeeds={}
         env.Window:Notify({Title="Collector",Content="Alvos limpos.",Duration=2})
     end})
 
     local function isSeedCollectorDone()
         local gui=LP:FindFirstChild("PlayerGui")
-        local progress = gui and gui:FindFirstChild("MainUI")
+        local progress=gui and gui:FindFirstChild("MainUI")
             and gui.MainUI:FindFirstChild("Menus")
             and gui.MainUI.Menus:FindFirstChild("SeedCollectorFrame")
             and gui.MainUI.Menus.SeedCollectorFrame:FindFirstChild("Main")
@@ -236,13 +239,13 @@ return function(env)
         end)
     end
 
-    T:CreateToggle({Name="Auto Submeter Seeds Selecionadas",CurrentValue=false,Flag="AutoSubmitSel",
+    SecColl:AddToggle({Name="Auto Submeter Seeds Selecionadas", Default=false,
         Callback=function(val)
             _G.AutoSubmitSeedToCollector=val
             if val then _G.AutoSubmitAllSeedsToCollector=false; startCollLoop() end
         end})
 
-    T:CreateToggle({Name="Auto Submeter TODAS Seeds",CurrentValue=false,Flag="AutoSubmitAll",
+    SecColl:AddToggle({Name="Auto Submeter TODAS Seeds", Default=false,
         Callback=function(val)
             _G.AutoSubmitAllSeedsToCollector=val
             if val then _G.AutoSubmitSeedToCollector=false; startCollLoop() end

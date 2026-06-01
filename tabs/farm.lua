@@ -1,15 +1,16 @@
 return function(env)
-    local T       = env.FarmTab
-    local Remotes = env.Remotes
-    local LP      = env.LocalPlayer
-    local findPlot= env.findMyPlot
-    local findSeed= env.findSeedTool
-    local pMoney  = env.parseMoney
-    local haveMon = env.haveEnoughMoney
+    local T        = env.FarmTab
+    local Remotes  = env.Remotes
+    local LP       = env.LocalPlayer
+    local findPlot = env.findMyPlot
+    local findSeed = env.findSeedTool
+    local pMoney   = env.parseMoney
+    local haveMon  = env.haveEnoughMoney
 
-    T:CreateSection("Auto Farming")
+    -- ── Auto Farming ──────────────────────────────────────────
+    local SecAuto = T:CreateSection("Auto Farming")
 
-    T:CreateToggle({Name="Auto Vender Caixas",CurrentValue=false,Flag="AutoSellCrates",
+    SecAuto:AddToggle({Name="Auto Vender Caixas", Default=false,
         Callback=function(val)
             _G.AutoSellCrates=val
             if not val then return end
@@ -23,7 +24,7 @@ return function(env)
             end)
         end})
 
-    T:CreateToggle({Name="Auto Desbloquear Plots",CurrentValue=false,Flag="AutoUnlockPlots",
+    SecAuto:AddToggle({Name="Auto Desbloquear Plots", Default=false,
         Callback=function(val)
             _G.AutoUnlockFarmPlots=val
             if not val then return end
@@ -44,20 +45,20 @@ return function(env)
             end)
         end})
 
-    T:CreateToggle({Name="Auto Expandir Farm Plot",CurrentValue=false,Flag="AutoExpandPlot",
+    SecAuto:AddToggle({Name="Auto Expandir Farm Plot", Default=false,
         Callback=function(val)
             _G.AutoExpandFarmPlot=val
             if not val then return end
             task.spawn(function()
                 while _G.AutoExpandFarmPlot do
                     pcall(function()
-                        local map = workspace:FindFirstChild("Map")
-                        local plots = map and map:FindFirstChild("Plots")
-                        local ur = Remotes:FindFirstChild("UpgradeFarm")
+                        local map=workspace:FindFirstChild("Map")
+                        local plots=map and map:FindFirstChild("Plots")
+                        local ur=Remotes:FindFirstChild("UpgradeFarm")
                         if not plots or not ur then return end
                         for _,p in ipairs(plots:GetChildren()) do
                             if not _G.AutoExpandFarmPlot then break end
-                            local txt = p:FindFirstChild("ExpandSign")
+                            local txt=p:FindFirstChild("ExpandSign")
                                 and p.ExpandSign:FindFirstChild("Screen")
                                 and p.ExpandSign.Screen:FindFirstChild("SurfaceGui")
                                 and p.ExpandSign.Screen.SurfaceGui:FindFirstChild("Expand")
@@ -71,7 +72,7 @@ return function(env)
             end)
         end})
 
-    T:CreateButton({Name="Remover Todas Plantas",Callback=function()
+    SecAuto:AddButton({Name="Remover Todas Plantas", Callback=function()
         task.spawn(function()
             local plot=findPlot(); if not plot then return end
             for _,d in ipairs(plot:GetDescendants()) do
@@ -83,7 +84,8 @@ return function(env)
         end)
     end})
 
-    T:CreateSection("Gerenciar Seeds")
+    -- ── Gerenciar Seeds ───────────────────────────────────────
+    local SecSeed = T:CreateSection("Gerenciar Seeds")
 
     local seedList={"None"}
     pcall(function()
@@ -91,11 +93,10 @@ return function(env)
         if #v>0 then seedList=v end
     end)
 
-    T:CreateDropdown({Name="Seed para Plantar",Options=seedList,CurrentOption={"None"},MultipleOptions=false,
-        Flag="SeedSelect",
-        Callback=function(opts) _G.SelectedSeedTrueName=opts[1] or "None" end})
+    SecSeed:AddDropdown({Name="Seed para Plantar", Options=seedList, Multi=false,
+        Callback=function(sel) _G.SelectedSeedTrueName=sel or "None" end})
 
-    T:CreateButton({Name="Plantar Seed Selecionada",Callback=function()
+    SecSeed:AddButton({Name="Plantar Seed Selecionada", Callback=function()
         if not _G.SelectedSeedTrueName or _G.SelectedSeedTrueName=="None" then
             env.Window:Notify({Title="Farm",Content="Selecione uma seed!",Duration=3}); return
         end
@@ -112,7 +113,7 @@ return function(env)
         end)
     end})
 
-    T:CreateButton({Name="Descartar Seed Selecionada",Callback=function()
+    SecSeed:AddButton({Name="Descartar Seed Selecionada", Callback=function()
         if not _G.SelectedSeedTrueName or _G.SelectedSeedTrueName=="None" then return end
         if _G.IsDiscarding then return end
         _G.IsDiscarding=true
@@ -132,7 +133,7 @@ return function(env)
         end)
     end})
 
-    T:CreateButton({Name="Parar Descarte",Callback=function()
+    SecSeed:AddButton({Name="Parar Descarte", Callback=function()
         _G.IsDiscarding=false
         env.Window:Notify({Title="Farm",Content="Descarte parado.",Duration=2})
     end})

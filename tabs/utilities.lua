@@ -1,12 +1,12 @@
 return function(env)
-    local T       = env.UtilsTab
-    local LP      = env.LocalPlayer
-    local Remotes = env.Remotes
-    local findPlot= env.findMyPlot
+    local T        = env.UtilsTab
+    local LP       = env.LocalPlayer
+    local Remotes  = env.Remotes
+    local findPlot = env.findMyPlot
 
-    T:CreateSection("Teleporte")
+    local SecTp = T:CreateSection("Teleporte")
 
-    T:CreateButton({Name="Ir para Meu Plot",Callback=function()
+    SecTp:AddButton({Name="Ir para Meu Plot", Callback=function()
         if env.teleportToMyPlot then env.teleportToMyPlot() end
     end})
 
@@ -17,7 +17,7 @@ return function(env)
     }
 
     for _,dest in ipairs(dests) do
-        T:CreateButton({Name="Teleportar: "..dest.label, Callback=function()
+        SecTp:AddButton({Name="Teleportar: "..dest.label, Callback=function()
             local plot=findPlot()
             local hrp=LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
             if plot and hrp then
@@ -26,9 +26,9 @@ return function(env)
         end})
     end
 
-    T:CreateSection("Configurações")
+    local SecCfg = T:CreateSection("Configurações")
 
-    T:CreateToggle({Name="Esconder Outros Plots",CurrentValue=false,Flag="HideOtherPlots",
+    SecCfg:AddToggle({Name="Esconder Outros Plots", Default=false,
         Callback=function(val)
             _G.HideOtherPlots=val
             local map=workspace:FindFirstChild("Map")
@@ -48,12 +48,12 @@ return function(env)
             end
         end})
 
-    T:CreateToggle({Name="Skip Money Check",CurrentValue=false,Flag="SkipMoney",
+    SecCfg:AddToggle({Name="Skip Money Check", Default=false,
         Callback=function(val) _G.SkipMoneyCheck=val end})
 
-    T:CreateSection("Rejoin")
+    local SecRj = T:CreateSection("Servidor")
 
-    T:CreateButton({Name="Rejoin Server",Callback=function()
+    SecRj:AddButton({Name="Rejoin Server", Callback=function()
         game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, LP)
     end})
 end
